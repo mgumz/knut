@@ -2,7 +2,7 @@
 
 I want to make 'folder1' and 'file2' of my home directory public, without
 serving both resources on different http-ports, without exposing the rest
-of my $HOME, without any copying the files or folders to another place.
+of my $HOME, without any copying of the files or folders to another place.
 
 I also want to map resources to uris adhoc, without any complex config files
 or any other voodoo.

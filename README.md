@@ -1,8 +1,11 @@
 # *knut* - a tiny webserver which throws (file-) trees through a window
 
 I want to make 'folder1' and 'file2' of my home directory public, without
-serving both resources on different http-ports. I also wanted adhoc mapping
-of folders to uris, without any complex config files or any other voodoo.
+serving both resources on different http-ports, without exposing the rest
+of my $HOME, without any copying the files or folders to another place.
+
+I also want to map resources to uris adhoc, without any complex config files
+or any other voodoo.
 
 And sometimes it's quite handy to just tell someone to POST stuff to a
 httpd-resource.

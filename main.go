@@ -456,11 +456,11 @@ input[type="submit"] { margin-top: 1em }
 		case "POST":
 			w.Header().Set("Content-Type", "text/html")
 		case "GET":
-			defer fmt.Fprintln(w, htmlDoc, uploadForm)
+			defer fmt.Fprint(w, htmlDoc, uploadForm)
 			fallthrough
 		case "HEAD":
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			w.Header().Set("Content-Length", strconv.Itoa(len(uploadForm)))
+			w.Header().Set("Content-Length", strconv.Itoa(len(htmlDoc)+len(uploadForm)))
 			return
 		default:
 			WriteStatus(w, http.StatusMethodNotAllowed)

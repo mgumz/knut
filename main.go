@@ -33,6 +33,8 @@ import (
 	"mime/multipart"
 	"net"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -192,7 +194,17 @@ func prepareTrees(muxer *http.ServeMux, mappings []string) (*http.ServeMux, int)
 		case tree[0] == '@':
 			handler = ServeString(tree[1:])
 		default:
-			if fi, err = os.Stat(tree); err == nil && !fi.IsDir() {
+			if extra, ok := url.Parse(tree); ok == nil {
+				switch extra.Scheme {
+				case "http", "https":
+					log.Println("***")
+					handler = httputil.NewSingleHostReverseProxy(extra)
+				}
+			}
+
+			if handler != nil {
+				break
+			} else if fi, err = os.Stat(tree); err == nil && !fi.IsDir() {
 				handler = ServeFile(tree)
 			} else {
 				handler = http.FileServer(http.Dir(tree))

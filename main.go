@@ -162,6 +162,10 @@ func prepareTrees(muxer *http.ServeMux, mappings []string) (*http.ServeMux, int)
 					handler = httputil.NewSingleHostReverseProxy(treeUrl)
 				case "file":
 					handler = fileOrDirHandler(treeUrl.Path, window)
+				case "tar":
+					handler = setContentType(tarHandler(treeUrl.Path), "application/x-tar")
+				case "tar+gz", "tar.gz", "tgz":
+					handler = setContentType(gzHandler(tarHandler(treeUrl.Path)), "application/x-gtar")
 				}
 			}
 

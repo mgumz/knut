@@ -21,9 +21,9 @@ func logRequestHandler(handler http.Handler, logWriter io.Writer) http.Handler {
 		if sc.code == 0 {
 			sc.code = 200
 		}
-		port_sep := strings.LastIndex(r.RemoteAddr, ":")
+		portSep := strings.LastIndex(r.RemoteAddr, ":")
 		fmt.Fprintf(logWriter, "%s\t%s\t%d\t%s\t%s%s\n",
-			time.Now().Format(time.RFC3339), r.RemoteAddr[:port_sep], sc.code, r.Method, r.Host, r.RequestURI)
+			time.Now().Format(time.RFC3339), r.RemoteAddr[:portSep], sc.code, r.Method, r.Host, r.RequestURI)
 	})
 }
 

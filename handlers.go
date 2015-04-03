@@ -34,10 +34,10 @@ func fileOrDirHandler(path, uri string) http.Handler {
 	return handler
 }
 
-// addServerIdaddServerIDHandler adds "Server: <server_id>" to the response header
-func addServerIDHandler(next http.Handler, server_id string) http.Handler {
+// addServerIdaddServerIDHandler adds "Server: <serverID>" to the response header
+func addServerIDHandler(next http.Handler, serverID string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Server", server_id)
+		w.Header().Set("Server", serverID)
 		next.ServeHTTP(w, r)
 	})
 }

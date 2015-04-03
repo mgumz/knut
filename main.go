@@ -126,14 +126,14 @@ func main() {
 func prepareTrees(muxer *http.ServeMux, mappings []string) (*http.ServeMux, int) {
 
 	var (
-		nHandlers, i int
+		nHandlers    int
 		handler      http.Handler
 		window, tree string
 		err          error
 		fi           os.FileInfo
 	)
 
-	for i, _ = range mappings {
+	for i := range mappings {
 
 		window, tree, err = getWindowAndTree(mappings[i])
 		if err != nil {
@@ -156,16 +156,16 @@ func prepareTrees(muxer *http.ServeMux, mappings []string) (*http.ServeMux, int)
 		case tree[0] == '@':
 			handler = serveStringHandler(tree[1:])
 		default:
-			if treeUrl, ok := url.Parse(tree); ok == nil {
-				switch treeUrl.Scheme {
+			if treeURL, ok := url.Parse(tree); ok == nil {
+				switch treeURL.Scheme {
 				case "http", "https":
-					handler = httputil.NewSingleHostReverseProxy(treeUrl)
+					handler = httputil.NewSingleHostReverseProxy(treeURL)
 				case "file":
-					handler = fileOrDirHandler(treeUrl.Path, window)
+					handler = fileOrDirHandler(treeURL.Path, window)
 				case "tar":
-					handler = setContentType(tarHandler(treeUrl.Path), "application/x-tar")
+					handler = setContentType(tarHandler(treeURL.Path), "application/x-tar")
 				case "tar+gz", "tar.gz", "tgz":
-					handler = setContentType(gzHandler(tarHandler(treeUrl.Path)), "application/x-gtar")
+					handler = setContentType(gzHandler(tarHandler(treeURL.Path)), "application/x-gtar")
 				}
 			}
 

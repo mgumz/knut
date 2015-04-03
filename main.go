@@ -464,14 +464,13 @@ input[type="submit"] { margin-top: 1em }
 
 	os.MkdirAll(dir, 0777)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		switch r.Method {
 		case "POST":
-			w.Header().Set("Content-Type", "text/html")
 		case "GET":
 			defer fmt.Fprint(w, htmlDoc, uploadForm)
 			fallthrough
 		case "HEAD":
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			w.Header().Set("Content-Length", strconv.Itoa(len(htmlDoc)+len(uploadForm)))
 			return
 		default:

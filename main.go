@@ -6,6 +6,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -124,67 +125,73 @@ func main() {
 // prepareTrees binds a list of uri:tree pairs to 'muxer'
 func prepareTrees(muxer *http.ServeMux, mappings []string) (*http.ServeMux, int) {
 
-	const (
-		errMsgMissingSep  = "error: pair %d (%q) doesn't contain the uri-tree seprator ':', ignoring\n"
-		errMsgInvalidPair = "error: invalid pair %d: uri: %q, tree: %q\n"
-	)
-
 	var (
 		nHandlers, i int
-		parts        []string
-		uri, tree    string
 		handler      http.Handler
-		fi           os.FileInfo
+		window, tree string
 		err          error
+		fi           os.FileInfo
 	)
 
-	for i, tree = range mappings {
+	for i, _ = range mappings {
 
-		if parts = strings.SplitN(tree, ":", 2); len(parts) != 2 {
-			fmt.Fprintf(os.Stderr, errMsgMissingSep, i+1, tree)
-			continue
-		}
-
-		if uri, tree = parts[0], parts[1]; uri == "" || tree == "" {
-			fmt.Fprintf(os.Stderr, errMsgInvalidPair, i+1, uri, tree)
+		window, tree, err = getWindowAndTree(mappings[i])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "warning: parsing %q (pos %d): %v\n", mappings[i], i+1, err)
 			continue
 		}
 
 		verb := "throws"
 		switch {
-		case uri[0] == '@': // indicates upload handler
-			if uri = uri[1:]; uri == "" {
-				fmt.Fprintf(os.Stderr, "error: post uri in pair %d is empty\n", i)
+		case window[0] == '@': // indicates upload handler
+			if window = window[1:]; window == "" {
+				fmt.Fprintf(os.Stderr, "warning: post uri in pair %d is empty\n", i)
 				continue
 			}
 			if fi, err = os.Stat(tree); err == nil && !fi.IsDir() {
-				fmt.Fprintf(os.Stderr, "error: existing %q is not a directory\n", tree)
+				fmt.Fprintf(os.Stderr, "warning: existing %q is not a directory\n", tree)
 				continue
 			}
 			handler, verb = uploadHandler(tree), "catches"
 		case tree[0] == '@':
 			handler = serveStringHandler(tree[1:])
 		default:
-			if extra, ok := url.Parse(tree); ok == nil {
-				switch extra.Scheme {
+			if treeUrl, ok := url.Parse(tree); ok == nil {
+				switch treeUrl.Scheme {
 				case "http", "https":
-					handler = httputil.NewSingleHostReverseProxy(extra)
+					handler = httputil.NewSingleHostReverseProxy(treeUrl)
+				case "file":
+					handler = fileOrDirHandler(treeUrl.Path, window)
 				}
 			}
 
-			if handler != nil {
-				break
-			} else if fi, err = os.Stat(tree); err == nil && !fi.IsDir() {
-				handler = serveFileHandler(tree)
-			} else {
-				handler = http.FileServer(http.Dir(tree))
-				handler = http.StripPrefix(uri, handler)
+			if handler == nil {
+				handler = fileOrDirHandler(tree, window)
 			}
 		}
 
-		fmt.Printf("knut %s %q through %q\n", verb, tree, uri)
-		muxer.Handle(uri, handler)
+		fmt.Printf("knut %s %q through %q\n", verb, tree, window)
+		muxer.Handle(window, handler)
 		nHandlers++
 	}
 	return muxer, nHandlers
+}
+
+var (
+	errMissingSep     = fmt.Errorf("doesn't contain the uri-tree seprator ':', ignoring")
+	errEmptyPairParts = fmt.Errorf("empty pair parts")
+)
+
+func getWindowAndTree(arg string) (window, tree string, err error) {
+
+	var parts []string
+	if parts = strings.SplitN(arg, ":", 2); len(parts) != 2 {
+		log.Println(arg, len(parts), parts)
+		return "", "", errMissingSep
+	}
+	if window, tree = parts[0], parts[1]; window == "" || tree == "" {
+		return "", "", errEmptyPairParts
+	}
+
+	return window, tree, nil
 }

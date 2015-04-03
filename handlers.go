@@ -3,7 +3,10 @@
 
 package main
 
-import "net/http"
+import (
+	"net/http"
+	"os"
+)
 
 // serveFileHandler serves the file given by 'name'
 func serveFileHandler(name string) http.Handler {
@@ -18,6 +21,17 @@ func serveStringHandler(str string) http.Handler {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Write([]byte(str))
 	})
+}
+
+func fileOrDirHandler(path, uri string) http.Handler {
+
+	if fi, err := os.Stat(path); err == nil && !fi.IsDir() {
+		return serveFileHandler(path)
+	}
+
+	handler := http.FileServer(http.Dir(path))
+	handler = http.StripPrefix(uri, handler)
+	return handler
 }
 
 // addServerIdaddServerIDHandler adds "Server: <server_id>" to the response header

@@ -11,6 +11,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -156,16 +157,19 @@ func prepareTrees(muxer *http.ServeMux, mappings []string) (*http.ServeMux, int)
 		case tree[0] == '@':
 			handler = serveStringHandler(tree[1:])
 		default:
-			if treeURL, ok := url.Parse(tree); ok == nil {
+			if treeURL, err := url.Parse(tree); err == nil {
+				log.Printf("%q => %q | %q", tree, treeURL.Path, treeURL.Host)
 				switch treeURL.Scheme {
 				case "http", "https":
 					handler = httputil.NewSingleHostReverseProxy(treeURL)
 				case "file":
-					handler = fileOrDirHandler(treeURL.Path, window)
+					handler = fileOrDirHandler(localFileName(treeURL), window)
 				case "tar":
-					handler = setContentType(tarHandler(treeURL.Path), "application/x-tar")
+					handler = setContentType(tarHandler(localFileName(treeURL)), "application/x-tar")
 				case "tar+gz", "tar.gz", "tgz":
-					handler = setContentType(gzHandler(tarHandler(treeURL.Path)), "application/x-gtar")
+					handler = setContentType(gzHandler(tarHandler(localFileName(treeURL))), "application/x-gtar")
+				case "zipfs":
+					handler = zipFsHandler(localFileName(treeURL))
 				}
 			}
 
@@ -198,4 +202,9 @@ func getWindowAndTree(arg string) (window, tree string, err error) {
 	}
 
 	return window, tree, nil
+}
+
+func localFileName(fileURL *url.URL) string {
+	// TODO: write tests:  file://./localfile file:///absolutefile
+	return filepath.Join(fileURL.Host, fileURL.Path)
 }

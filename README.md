@@ -10,17 +10,34 @@ or any other voodoo.
 And sometimes it's quite handy to just tell someone to POST stuff to a
 httpd-resource.
 
-
 ## Usage
 
-    knut [opts] uri:folder [uri2:file1] [@upload:upload_folder] [...]
+    knut [opts] uri:folder [mapping2] [mapping3] [...]
 
     Sample:
 
-       knut /:. /ding.txt:/tmp/dong.txt
+        knut /:. /ding.txt:/tmp/dong.txt
+
+    Mapping Format:
+
+        /:.                  - list contents of current directory via "/"
+        /uri:folder          - list contents of "folder" via "/uri"
+        /uri:file            - serve "file" via "/uri"
+        /uri:@text           - respond with "text" at "/uri"
+        @/upload:folder      - accept multipart encoded data via POST at "/upload"
+                               and store it inside "folder". A simple upload form
+                               is rendered on GET.
+        /c.tgz:tar+gz://./   - creates a (gzipped) tarball from the current directory
+                               and serves it via "/c.tgz"
+        /z.zip:zipfs://a.zip - list and servce the content of the entries of an
+                               existing "z.zip" via the "/z.zip": consider a file
+                               "example.txt" inside "z.zip", it will be directly
+                               available via "/z.zip/example.txt"
+        /uri:http://1.2.3.4/ - creates a reverse proxy and forwards requests to /uri
+                               to the given http-host
 
     Options:
-
+    
       -auth="": use 'name:password' to require
       -bind=":8080": address to bind to
       -compress=true: handle "Accept-Encoding" = "gzip,deflate"
@@ -29,15 +46,6 @@ httpd-resource.
       -tls-cert="": use given cert to start tls
       -tls-key="": use given key to start tls
       -tls-onetime=false: use a onetime-in-memory cert+key to drive tls
-
-
-### File uploads
-
-To create an endpoint to POST things to, use `@/endpoint:storage_folder`. All
-multiform encoded data sent to that endpoint will end up in the `storage_folder`.
-If that folder is nonexistant yet, it will be created upon start.
-
-If you hit the endpoint via GET, a simple upload-form will be rendered.
 
 
 ## Build & Installing

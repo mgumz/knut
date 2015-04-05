@@ -2,11 +2,14 @@ package main
 
 import (
 	"archive/zip"
-	"errors"
 	"fmt"
+	"html"
+	"io"
 	"log"
 	"net/http"
 	"os"
+	"path"
+	"strings"
 )
 
 func zipFsHandler(name string) http.Handler {
@@ -19,50 +22,55 @@ func zipFsHandler(name string) http.Handler {
 			return
 		}
 		defer z.Close()
-		zreader := zipReader{ReadCloser: z}
-		zipHandler := http.FileServer(&zreader)
-		zipHandler.ServeHTTP(w, r)
+
+		if r.URL.Path != "/" {
+			for _, file := range z.File {
+				if r.URL.Path[1:] != file.Name {
+					continue
+				}
+				if file.Mode().IsRegular() {
+					serveZipEntry(w, file)
+					return
+				}
+				break
+			}
+		}
+
+		w.Header().Set("Content-Type", "text/html")
+		listEntries(w, z.Reader, r.URL.Path[1:])
 	})
 }
 
-type zipReader struct { // represents a http.Filesystem
-	*zip.ReadCloser
+func serveZipEntry(w http.ResponseWriter, zFile *zip.File) {
+
+	zr, err := zFile.Open()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%v", err)
+		return
+	}
+	defer zr.Close()
+	io.Copy(w, zr)
 }
 
-func (zr *zipReader) Open(name string) (http.File, error) {
-	// TODO: / -> just list the top-level contents
-	//       /match.txt -> just the file
-	//       /folder/ -> all the entries that are directly subentries
+func listEntries(w http.ResponseWriter, zreader zip.Reader, prefix string) {
 
-	log.Printf("zipReader.Open(%q)", name)
-	for i, zfile := range zr.ReadCloser.File {
-		log.Printf("%d: %s", i, zfile.Name)
-		if name[1:] == zfile.Name {
-			break
+	fmt.Fprint(w, "<pre>")
+	if prefix != "" {
+		fmt.Fprintln(w, `<a href="../">..</a>`)
+	}
+	for _, file := range zreader.File {
+		if !strings.HasPrefix(file.Name, prefix) {
+			continue
+		}
+		if name := file.Name[len(prefix):]; name != "" {
+			if path.Dir(name) != "." { // other directory
+				log.Println(name, path.Dir(name))
+				continue
+			}
+			fmt.Fprintf(w, "<a href=%q>%s</a>\n",
+				html.EscapeString(file.Name), html.EscapeString(name))
 		}
 	}
-	return nil, errors.New("zipReader.Open(): not yet implemented")
-}
-
-type zipEntry struct { // represents a http.File
-	zip.File
-	offset int64
-	whence int
-}
-
-func (ze *zipEntry) Stat() (os.FileInfo, error) {
-	return ze.File.FileInfo(), nil
-}
-
-func (ze *zipEntry) Seek(offset int64, whence int) (int64, error) {
-	ze.offset, ze.whence = offset, whence
-	return ze.offset, nil
-}
-
-func (ze *zipEntry) Readdir(count int) ([]os.FileInfo, error) {
-	if ze.Mode().IsDir() {
-
-	}
-	// TODO: if ze.isDir() -> yield entries
-	return nil, nil
+	fmt.Fprint(w, "</pre>")
 }

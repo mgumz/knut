@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"html"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -63,13 +62,11 @@ func listEntries(w http.ResponseWriter, zreader zip.Reader, prefix string) {
 		if !strings.HasPrefix(file.Name, prefix) {
 			continue
 		}
-		if name := file.Name[len(prefix):]; name != "" {
-			if path.Dir(name) != "." { // other directory
-				log.Println(name, path.Dir(name))
-				continue
-			}
-			fmt.Fprintf(w, "<a href=%q>%s</a>\n",
-				html.EscapeString(file.Name), html.EscapeString(name))
+		if name := file.Name[len(prefix):]; name != "" &&
+			strings.Count(path.Clean(name), "/") == 0 {
+			fmt.Fprintf(w, "<a href=\"/%s\">%s</a>\n",
+				html.EscapeString(file.Name),
+				html.EscapeString(file.Name[len(prefix):]))
 		}
 	}
 	fmt.Fprint(w, "</pre>")

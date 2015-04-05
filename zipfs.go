@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"bytes"
 	"fmt"
 	"html"
 	"io"
@@ -58,6 +59,16 @@ func serveZipEntry(w http.ResponseWriter, zFile *zip.File) {
 		return
 	}
 	defer zr.Close()
+
+	buf := bytes.NewBuffer(nil)
+	if _, err = io.CopyN(buf, zr, 512); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%v", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", http.DetectContentType(buf.Bytes()))
+	w.Write(buf.Bytes())
 	io.Copy(w, zr)
 }
 

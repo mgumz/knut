@@ -35,6 +35,7 @@ func tarDirectory(w io.Writer, dir string) error {
 
 		entry := &tarEntry{tar: tw}
 		entry.GetHeader(info)
+		entry.SetName(path)
 		entry.WriteHeader()
 		entry.TarFileEventually(path)
 
@@ -51,6 +52,13 @@ type tarEntry struct {
 }
 
 func (entry *tarEntry) GetHeader(fi os.FileInfo) { entry.header, entry.err = tar.FileInfoHeader(fi, "") }
+func (entry *tarEntry) SetName(name string) {
+	if entry.err != nil {
+		return
+	}
+	entry.header.Name = name
+}
+
 func (entry *tarEntry) WriteHeader() {
 	if entry.err != nil {
 		return

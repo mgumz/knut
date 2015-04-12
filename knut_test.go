@@ -69,7 +69,7 @@ func TestLocalFilename(t *testing.T) {
 		if err != nil {
 			t.Errorf("case %d: parsing test.in %q: %v", i, test.in, err)
 		}
-		out := filepath.ToSlash(localFileName(u))
+		out := filepath.ToSlash(localFilename(u))
 		t.Logf("case %d: localFilename(%q): %q", i, u.String(), out)
 		if out != test.out {
 			t.Errorf("case %d: localFilename(%q): expected %q, got %q",

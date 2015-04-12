@@ -33,7 +33,7 @@ func getWindowAndTree(arg string) (window, tree string, err error) {
 	return window, tree, nil
 }
 
-func localFileName(fileURL *url.URL) string {
+func localFilename(fileURL *url.URL) string {
 	return filepath.Join(fileURL.Host, fileURL.Path)
 }
 

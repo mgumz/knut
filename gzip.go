@@ -5,22 +5,38 @@ package main
 
 import (
 	"compress/gzip"
+	"fmt"
+	"log"
 	"net/http"
+	"strconv"
 )
 
-func gzHandler(next http.Handler) http.Handler {
+func gzHandler(next http.Handler, clevel string) http.Handler {
+
+	level, err := atoiInRange(clevel, -1, gzip.BestCompression, gzip.DefaultCompression)
+	if err != nil {
+		log.Printf("warning: scanning compression level: %v", err)
+	}
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gzw, _ := gzip.NewWriterLevel(w, gzip.BestCompression)
+		gzw, _ := gzip.NewWriterLevel(w, level)
 		defer gzw.Close()
-		next.ServeHTTP(&gzWriter{ResponseWriter: w, gz: gzw}, r)
+		next.ServeHTTP(&cWriter{ResponseWriter: w, Writer: gzw}, r)
 	})
 }
 
-type gzWriter struct {
-	http.ResponseWriter
-	gz *gzip.Writer
-}
+func atoiInRange(a string, min, max, fallback int) (int, error) {
+	if a == "" {
+		return fallback, nil
+	}
 
-func (gzw *gzWriter) Header() http.Header            { return gzw.ResponseWriter.Header() }
-func (gzw *gzWriter) WriteHeader(status int)         { gzw.ResponseWriter.WriteHeader(status) }
-func (gzw *gzWriter) Write(data []byte) (int, error) { return gzw.gz.Write(data) }
+	n, err := strconv.Atoi(a)
+	if err != nil {
+		return fallback, fmt.Errorf("scanning %q: %v", a, err)
+	}
+
+	if n < min || n > max {
+		return fallback, fmt.Errorf("%q out of range (%d,%d)", a, min, max)
+	}
+	return n, nil
+}

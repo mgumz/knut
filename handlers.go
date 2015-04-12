@@ -34,7 +34,8 @@ func fileOrDirHandler(path, uri string) http.Handler {
 	return handler
 }
 
-// addServerIdaddServerIDHandler adds "Server: <serverID>" to the response header
+// addServerIDHandler adds "Server: <serverID>" to the response
+// header
 func addServerIDHandler(next http.Handler, serverID string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Server", serverID)
@@ -50,7 +51,8 @@ func noCacheHandler(next http.Handler) http.Handler {
 	})
 }
 
-// basicAuthHandler checks the submited username and password against predefined values.
+// basicAuthHandler checks the submited username and password against predefined
+// values.
 func basicAuthHandler(next http.Handler, username, password string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("WWW-Authenticate", `Basic realm="knut"`)
@@ -63,11 +65,13 @@ func basicAuthHandler(next http.Handler, username, password string) http.Handler
 	})
 }
 
+// setContentType sets the "Content-Type" to "contentType", if not already
+// set
 func setContentType(next http.Handler, contentType string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if _, exists := w.Header()["Content-Type"]; !exists {
 			w.Header().Set("Content-Type", contentType)
-			next.ServeHTTP(w, r)
 		}
+		next.ServeHTTP(w, r)
 	})
 }

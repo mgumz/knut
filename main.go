@@ -6,12 +6,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -176,18 +174,24 @@ func prepareTrees(muxer *http.ServeMux, mappings []string) (*http.ServeMux, int)
 			handler = serveStringHandler(tree[1:])
 		default:
 			if treeURL, err := url.Parse(tree); err == nil {
-				log.Printf("%q => %q | %q", tree, treeURL.Path, treeURL.Host)
 				switch treeURL.Scheme {
 				case "http", "https":
 					handler = httputil.NewSingleHostReverseProxy(treeURL)
 				case "file":
 					handler = fileOrDirHandler(localFileName(treeURL), window)
 				case "tar":
-					handler = setContentType(tarHandler(localFileName(treeURL)), "application/x-tar")
+					prefix := treeURL.Query().Get("prefix")
+					handler = tarHandler(localFileName(treeURL), prefix)
+					handler = setContentType(handler, "application/x-tar")
 				case "tar+gz", "tar.gz", "tgz":
-					handler = setContentType(gzHandler(tarHandler(localFileName(treeURL))), "application/x-gtar")
+					prefix := treeURL.Query().Get("prefix")
+					clevel := treeURL.Query().Get("level")
+					handler = tarHandler(localFileName(treeURL), prefix)
+					handler = gzHandler(handler, clevel)
+					handler = setContentType(handler, "application/x-gtar")
 				case "zipfs":
 					handler = zipFSHandler(localFileName(treeURL))
+					handler = setContentType(handler, "application/octet-stream")
 				}
 			}
 
@@ -198,31 +202,7 @@ func prepareTrees(muxer *http.ServeMux, mappings []string) (*http.ServeMux, int)
 
 		fmt.Printf("knut %s %q through %q\n", verb, tree, window)
 		muxer.Handle(window, handler)
-		nHandlers++
+		nHandlers, handler = nHandlers+1, nil
 	}
 	return muxer, nHandlers
-}
-
-var (
-	errMissingSep     = fmt.Errorf("doesn't contain the uri-tree seprator ':', ignoring")
-	errEmptyPairParts = fmt.Errorf("empty pair parts")
-)
-
-func getWindowAndTree(arg string) (window, tree string, err error) {
-
-	var parts []string
-	if parts = strings.SplitN(arg, ":", 2); len(parts) != 2 {
-		log.Println(arg, len(parts), parts)
-		return "", "", errMissingSep
-	}
-	if window, tree = parts[0], parts[1]; window == "" || tree == "" {
-		return "", "", errEmptyPairParts
-	}
-
-	return window, tree, nil
-}
-
-func localFileName(fileURL *url.URL) string {
-	// TODO: write tests:  file://./localfile file:///absolutefile
-	return filepath.Join(fileURL.Host, fileURL.Path)
 }

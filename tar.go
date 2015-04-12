@@ -14,20 +14,22 @@ import (
 
 // tarHandler creates a tar-archive from 'dir' on the fly and
 // writes it to 'w'
-func tarHandler(dir string) http.Handler {
+func tarHandler(dir, prefix string) http.Handler {
 
 	if dir == "" { // "tar://." yields "" after url.Parse()
 		dir = "."
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := tarDirectory(w, dir); err != nil {
+		if err := tarDirectory(w, dir, prefix); err != nil {
 			fmt.Fprintf(os.Stderr, "warning: creating tar of %q: %v\n", dir, err)
 		}
 	})
 }
 
-func tarDirectory(w io.Writer, dir string) error {
+// tarDirectory creates a .tar from "dir" and writes it to
+// "w". it also prepends "prefix" to each name.
+func tarDirectory(w io.Writer, dir, prefix string) error {
 	tw := tar.NewWriter(w)
 	defer tw.Close()
 
@@ -35,7 +37,7 @@ func tarDirectory(w io.Writer, dir string) error {
 
 		entry := &tarEntry{tar: tw}
 		entry.GetHeader(info)
-		entry.SetName(path)
+		entry.SetName(prefix + path)
 		entry.WriteHeader()
 		entry.TarFileEventually(path)
 

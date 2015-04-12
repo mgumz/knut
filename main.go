@@ -132,7 +132,7 @@ func main() {
 		run = func() error { return http.ListenAndServe(opts.bindAddr, h) }
 	}
 
-	fmt.Printf("\nknut started on %s, be aware of the trees!\n", opts.bindAddr)
+	fmt.Printf("\nknut started on %s, be aware of the trees!\n\n", opts.bindAddr)
 	if err := run(); err != nil {
 		fmt.Printf("error: %v\n", err)
 		os.Exit(1)
@@ -179,6 +179,15 @@ func prepareTrees(muxer *http.ServeMux, mappings []string) (*http.ServeMux, int)
 					handler = httputil.NewSingleHostReverseProxy(treeURL)
 				case "file":
 					handler = fileOrDirHandler(localFilename(treeURL), window)
+				case "qr":
+					qrContent := treeURL.Path
+					if len(qrContent) <= 1 {
+						fmt.Fprintf(os.Stderr, "warning: qr:// needs content, %q\n", qrContent)
+						continue
+					}
+					qrContent = qrContent[1:] // cut away the leading /
+					handler = qrHandler(qrContent)
+					handler = setContentType(handler, "image/png")
 				case "tar":
 					prefix := treeURL.Query().Get("prefix")
 					handler = tarHandler(localFilename(treeURL), prefix)

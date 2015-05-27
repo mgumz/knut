@@ -24,6 +24,7 @@ httpd-resource.
         /uri:folder          - list contents of "folder" via "/uri"
         /uri:file            - serve "file" via "/uri"
         /uri:@text           - respond with "text" at "/uri"
+        30x/uri:location     - respond with 301 at "/uri"
         @/upload:folder      - accept multipart encoded data via POST at "/upload"
                                and store it inside "folder". A simple upload form
                                is rendered on GET.

@@ -30,6 +30,7 @@ Mapping Format:
    /uri:folder          - list contents of "folder" via "/uri"
    /uri:file            - serve "file" via "/uri"
    /uri:@text           - respond with "text" at "/uri"
+   30x/uri:location     - respond with 301 at "/uri"
    @/upload:folder      - accept multipart encoded data via POST at "/upload"
                           and store it inside "folder". A simple upload form
                           is rendered on GET.
@@ -170,6 +171,12 @@ func prepareTrees(muxer *http.ServeMux, mappings []string) (*http.ServeMux, int)
 				continue
 			}
 			handler, verb = uploadHandler(tree), "catches"
+		case strings.HasPrefix(window, "30x"):
+			if window = window[3:]; window == "" {
+				fmt.Fprintf(os.Stderr, "warning: post uri in pair %d is empty\n", i)
+				continue
+			}
+			handler, verb = redirectHandler(window, tree), "points at"
 		case tree[0] == '@':
 			handler = serveStringHandler(tree[1:])
 		default:

@@ -42,6 +42,7 @@ Mapping Format:
                           available via "/z.zip/example.txt" 
    /uri:http://1.2.3.4/ - creates a reverse proxy and forwards requests to /uri
                           to the given http-host
+   /uri:git://folder/   - serves files via "git http-backend"
 
 Options:
 	`)
@@ -186,6 +187,8 @@ func prepareTrees(muxer *http.ServeMux, mappings []string) (*http.ServeMux, int)
 					handler = httputil.NewSingleHostReverseProxy(treeURL)
 				case "file":
 					handler = fileOrDirHandler(localFilename(treeURL), window)
+				case "git":
+					handler = gitHandler(localFilename(treeURL), window)
 				case "tar":
 					prefix := treeURL.Query().Get("prefix")
 					handler = tarHandler(localFilename(treeURL), prefix)

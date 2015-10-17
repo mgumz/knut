@@ -22,3 +22,24 @@ func gitHandler(path, uri string) http.Handler {
 
 	return gitHandler
 }
+
+// cgitHandler will call "cgit" via /uri:cgit://path/to/dir. "cgit" uses
+// a configuration file given via the environment variable CGIT_CONFIG. if
+// that file is not given, a simple one is created for the user. that created
+// file is deleted when **knut** shuts down. it's main purpose is to set the
+// scan-path directive to "." which makes cgit scan the directory given via
+// the uri. if the user places a "cgitrc" file into the .git folder of a
+// scanned git-repo, the "repo.*" options are applied there. eg,
+//  knut.git/.git/cgitrc
+//                      desc=knut - throws trees out of windows
+//
+// will make that directory be listed with that description.
+func cgitHandler(path, uri string) http.Handler {
+	cgitBinary, _ := exec.LookPath("cgit")
+	cgitHandler := new(cgi.Handler)
+	cgitHandler.Dir = path
+	cgitHandler.Root = uri
+	cgitHandler.Path = cgitBinary
+	cgitHandler.Env = os.Environ()
+	return cgitHandler
+}

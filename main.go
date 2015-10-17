@@ -189,6 +189,8 @@ func prepareTrees(muxer *http.ServeMux, mappings []string) (*http.ServeMux, int)
 					handler = fileOrDirHandler(localFilename(treeURL), window)
 				case "git":
 					handler = gitHandler(localFilename(treeURL), window)
+				case "cgit":
+					handler = cgitHandler(localFilename(treeURL), window)
 				case "tar":
 					prefix := treeURL.Query().Get("prefix")
 					handler = tarHandler(localFilename(treeURL), prefix)

@@ -1,0 +1,5 @@
+css=/assets/cgit.css
+logo=/assets/cgit.png
+enable-commit-graph=1
+remove-suffix=1
+scan-path=..

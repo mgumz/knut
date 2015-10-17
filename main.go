@@ -30,6 +30,7 @@ Mapping Format:
    /uri:folder          - list contents of "folder" via "/uri"
    /uri:file            - serve "file" via "/uri"
    /uri:@text           - respond with "text" at "/uri"
+   30x/uri:location     - respond with 301 at "/uri"
    @/upload:folder      - accept multipart encoded data via POST at "/upload"
                           and store it inside "folder". A simple upload form
                           is rendered on GET.
@@ -41,6 +42,7 @@ Mapping Format:
                           available via "/z.zip/example.txt" 
    /uri:http://1.2.3.4/ - creates a reverse proxy and forwards requests to /uri
                           to the given http-host
+   /uri:git://folder/   - serves files via "git http-backend"
 
 Options:
 	`)
@@ -170,6 +172,12 @@ func prepareTrees(muxer *http.ServeMux, mappings []string) (*http.ServeMux, int)
 				continue
 			}
 			handler, verb = uploadHandler(tree), "catches"
+		case strings.HasPrefix(window, "30x"):
+			if window = window[3:]; window == "" {
+				fmt.Fprintf(os.Stderr, "warning: post uri in pair %d is empty\n", i)
+				continue
+			}
+			handler, verb = redirectHandler(window, tree), "points at"
 		case tree[0] == '@':
 			handler = serveStringHandler(tree[1:])
 		default:
@@ -188,6 +196,8 @@ func prepareTrees(muxer *http.ServeMux, mappings []string) (*http.ServeMux, int)
 					qrContent = qrContent[1:] // cut away the leading /
 					handler = qrHandler(qrContent)
 					handler = setContentType(handler, "image/png")
+				case "git":
+					handler = gitHandler(localFilename(treeURL), window)
 				case "tar":
 					prefix := treeURL.Query().Get("prefix")
 					handler = tarHandler(localFilename(treeURL), prefix)

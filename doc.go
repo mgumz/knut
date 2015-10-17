@@ -8,21 +8,24 @@ Sample:
 
 Mapping Format:
 
-   /:.                  - list contents of current directory via "/"
-   /uri:folder          - list contents of "folder" via "/uri"
-   /uri:file            - serve "file" via "/uri"
-   /uri:@text           - respond with "text" at "/uri"
-   @/upload:folder      - accept multipart encoded data via POST at "/upload"
-                          and store it inside "folder". A simple upload form
-                          is rendered on GET.
-   /c.tgz:tar+gz://./   - creates a (gzipped) tarball from the current directory
-                          and serves it via "/c.tgz"
-   /z.zip:zipfs://a.zip - list and servce the content of the entries of an
-                          existing "z.zip" via the "/z.zip": consider a file
-                          "example.txt" inside "z.zip", it will be directly
-                          available via "/z.zip/example.txt"
-   /uri:http://1.2.3.4/ - creates a reverse proxy and forwards requests to /uri
-                          to the given http-host
+   /:.                     - list contents of current directory via "/"
+   /uri:folder             - list contents of "folder" via "/uri"
+   /uri:file               - serve "file" via "/uri"
+   /uri:@text              - respond with "text" at "/uri"
+   @/upload:folder         - accept multipart encoded data via POST at "/upload"
+                             and store it inside "folder". A simple upload form
+                             is rendered on GET.
+   /c.tgz:tar+gz://./      - creates a (gzipped) tarball from the current directory
+                             and serves it via "/c.tgz"
+   /z.zip:zipfs://a.zip    - list and servce the content of the entries of an
+                             existing "z.zip" via the "/z.zip": consider a file
+                             "example.txt" inside "z.zip", it will be directly
+                             available via "/z.zip/example.txt"
+   /uri:http://1.2.3.4/    - creates a reverse proxy and forwards requests to /uri
+                             to the given http-host
+   /uri:git://folder/      - serves files via "git http-backend"
+   /uri:cgit://path/to/dir - serves git-repos via "cgit"
+
 
 Options:
 

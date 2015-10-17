@@ -1,13 +1,20 @@
+// Copyright 2015 Mathias Gumz. All rights reserved. Use of this source code
+// is governed by a BSD-style license that can be found in the LICENSE file.
+
 package main
 
 import (
 	"net/http"
 	"net/http/cgi"
+	"os"
 	"os/exec"
 )
 
-// https://git-scm.com/docs/git-http-backend
-
+// gitHandler serves the given directory via "git http-backend". the advantage
+// of using "git http-backend" is that it supports the more clever way of
+// offering a git repository (opposite to the dumb http-protocol also possible)
+//
+// see https://git-scm.com/docs/git-http-backend
 func gitHandler(path, uri string) http.Handler {
 
 	gitBinary, _ := exec.LookPath("git")

@@ -4,7 +4,7 @@ I want to make 'folder1' and 'file2' of my home directory public, without
 serving both resources on different http-ports, without exposing the rest
 of my $HOME, without any copying of the files or folders to another place.
 
-I also want to map resources to uris adhoc, without any complex config files
+I also want to map resources to URIs, adhoc, without any complex config files
 or any other voodoo.
 
 And sometimes it's quite handy to just tell someone to POST stuff to a
@@ -28,17 +28,19 @@ httpd-resource.
         @/upload:folder      - accept multipart encoded data via POST at "/upload"
                                and store it inside "folder". A simple upload form
                                is rendered on GET.
-        /c.tgz:tar+gz://./   - creates a (gzipped) tarball from the current directory
-                               and serves it via "/c.tgz"
+        /c.tgz:tar+gz://./   - creates a (gzipped) tarball from the current
+                               directory and serves it via "/c.tgz"
+        /z.zip:zip://./      - creates a zip files from the current directory
+                               and serves it via "/z.zip"
         /z.zip:zipfs://a.zip - list and servce the content of the entries of an
                                existing "z.zip" via the "/z.zip": consider a file
                                "example.txt" inside "z.zip", it will be directly
                                available via "/z.zip/example.txt"
-        /uri:http://1.2.3.4/ - creates a reverse proxy and forwards requests to /uri
-                               to the given http-host
+        /uri:http://1.2.3.4/ - creates a reverse proxy and forwards requests to
+                               /uri to the given http-host
 
     Options:
-    
+
       -auth="": use 'name:password' to require
       -bind=":8080": address to bind to
       -compress=true: handle "Accept-Encoding" = "gzip,deflate"

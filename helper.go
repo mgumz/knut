@@ -43,3 +43,8 @@ func writeStatus(w http.ResponseWriter, code int) {
 	w.WriteHeader(code)
 	fmt.Fprintf(w, "%d: %s", code, http.StatusText(code))
 }
+
+func hasQueryParam(key string, vals url.Values) bool {
+	_, exists := vals[key]
+	return exists
+}

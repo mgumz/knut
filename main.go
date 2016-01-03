@@ -36,10 +36,12 @@ Mapping Format:
                              is rendered on GET.
    /c.tgz:tar+gz://./      - creates a (gzipped) tarball from the current directory
                              and serves it via "/c.tgz"
-   /z.zip:zipfs://a.zip    - list and servce the content of the entries of an 
+   /z.zip:zip://./         - creates a zip files from the current directory
+                             and serves it via "/z.zip"
+   /z.zip:zipfs://a.zip    - list and servce the content of the entries of an
                              existing "z.zip" via the "/z.zip": consider a file
                              "example.txt" inside "z.zip", it will be directly
-                             available via "/z.zip/example.txt" 
+                             available via "/z.zip/example.txt"
    /uri:http://1.2.3.4/    - creates a reverse proxy and forwards requests to /uri
                              to the given http-host
    /uri:git://folder/      - serves files via "git http-backend"
@@ -183,6 +185,7 @@ func prepareTrees(muxer *http.ServeMux, mappings []string) (*http.ServeMux, int)
 			handler = serveStringHandler(tree[1:])
 		default:
 			if treeURL, err := url.Parse(tree); err == nil {
+				query := treeURL.Query()
 				switch treeURL.Scheme {
 				case "http", "https":
 					handler = httputil.NewSingleHostReverseProxy(treeURL)
@@ -202,15 +205,20 @@ func prepareTrees(muxer *http.ServeMux, mappings []string) (*http.ServeMux, int)
 				case "cgit":
 					handler = cgitHandler(localFilename(treeURL), window)
 				case "tar":
-					prefix := treeURL.Query().Get("prefix")
+					prefix := query.Get("prefix")
 					handler = tarHandler(localFilename(treeURL), prefix)
 					handler = setContentType(handler, "application/x-tar")
 				case "tar+gz", "tar.gz", "tgz":
-					prefix := treeURL.Query().Get("prefix")
-					clevel := treeURL.Query().Get("level")
+					prefix := query.Get("prefix")
+					clevel := query.Get("level")
 					handler = tarHandler(localFilename(treeURL), prefix)
 					handler = gzHandler(handler, clevel)
 					handler = setContentType(handler, "application/x-gtar")
+				case "zip":
+					prefix := query.Get("prefix")
+					store := hasQueryParam("store", query)
+					handler = zipHandler(localFilename(treeURL), prefix, store)
+					handler = setContentType(handler, "application/zip")
 				case "zipfs":
 					handler = zipFSHandler(localFilename(treeURL))
 					handler = setContentType(handler, "application/octet-stream")

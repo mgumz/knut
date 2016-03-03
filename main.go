@@ -225,8 +225,9 @@ func prepareTrees(muxer *http.ServeMux, mappings []string) (*http.ServeMux, int)
 					handler = zipHandler(localFilename(treeURL), prefix, store)
 					handler = setContentType(handler, "application/zip")
 				case "zipfs":
-					handler = zipFSHandler(localFilename(treeURL))
-					handler = setContentType(handler, "application/octet-stream")
+					prefix := query.Get("prefix")
+					index := query.Get("index")
+					handler = zipFSHandler(localFilename(treeURL), prefix, index)
 				}
 			}
 

@@ -147,6 +147,11 @@ func main() {
 // prepareTrees binds a list of uri:tree pairs to 'muxer'
 func prepareTrees(muxer *http.ServeMux, mappings []string) (*http.ServeMux, int) {
 
+	const (
+		UPLOAD_HANDLER = '@'
+		STRING_HANDLER = '@'
+	)
+
 	var (
 		nHandlers    int
 		handler      http.Handler
@@ -165,7 +170,7 @@ func prepareTrees(muxer *http.ServeMux, mappings []string) (*http.ServeMux, int)
 
 		verb := "throws"
 		switch {
-		case window[0] == '@': // indicates upload handler
+		case window[0] == UPLOAD_HANDLER:
 			if window = window[1:]; window == "" {
 				fmt.Fprintf(os.Stderr, "warning: post uri in pair %d is empty\n", i)
 				continue
@@ -181,7 +186,7 @@ func prepareTrees(muxer *http.ServeMux, mappings []string) (*http.ServeMux, int)
 				continue
 			}
 			handler, verb = redirectHandler(window, tree), "points at"
-		case tree[0] == '@':
+		case tree[0] == STRING_HANDLER:
 			handler = serveStringHandler(tree[1:])
 		default:
 			if treeURL, err := url.Parse(tree); err == nil {

@@ -18,9 +18,15 @@ func gzHandler(next http.Handler, clevel string) http.Handler {
 		log.Printf("warning: scanning compression level: %v", err)
 	}
 
+	gzPool := newGzPool(level)
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gzw, _ := gzip.NewWriterLevel(w, level)
-		defer gzw.Close()
+		gzw := gzPool.Get().(*gzip.Writer)
+		gzw.Reset(w)
+		defer func() {
+			gzw.Flush()
+			gzPool.Put(gzw)
+		}()
 		next.ServeHTTP(&cWriter{ResponseWriter: w, Writer: gzw}, r)
 	})
 }

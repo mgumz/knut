@@ -52,7 +52,15 @@ func (ot *onetimeTLS) createListener(addr string) {
 }
 func (ot *onetimeTLS) createPrivateKey() {
 	if ot.err == nil {
-		ot.privKey, ot.err = ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+		// * in general a good read: https://safecurves.cr.yp.to/
+		// * elliptic.P256/() returns a Curve which implements P-256 (see
+		//   FIPS 186-3, section D.2.3)
+		// * Chrome redraw support for elliptic.P521() (see
+		//   https://bugs.chromium.org/p/chromium/issues/detail?id=478225
+		//   https://boringssl.googlesource.com/boringssl/+/e9fc3e547e557492316932b62881c3386973ceb2%5E!)
+		// * http://security.stackexchange.com/questions/31772/what-elliptic-curves-are-supported-by-browsers
+		curve := elliptic.P256()
+		ot.privKey, ot.err = ecdsa.GenerateKey(curve, rand.Reader)
 	}
 }
 func (ot *onetimeTLS) createSerialNumber(n uint) {
@@ -101,6 +109,8 @@ func (ot *onetimeTLS) fillTLSConfig() {
 	if ot.err == nil {
 		ot.tlsConfig.NextProtos = []string{"http/1.1"}
 		ot.tlsConfig.MinVersion = tls.VersionTLS11
+		ot.tlsConfig.CurvePreferences = []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256}
+		ot.tlsConfig.PreferServerCipherSuites = true
 		ot.tlsConfig.SessionTicketsDisabled = true
 		ot.tlsConfig.Certificates = make([]tls.Certificate, 1)
 		ot.tlsConfig.Certificates[0], ot.err = tls.X509KeyPair(ot.certBytes, ot.privKeyBytes)

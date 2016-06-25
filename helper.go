@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -21,6 +22,16 @@ var (
 // essentially), the part after the first ':' is called "the tree", it's
 // the content that will be delivered.
 func getWindowAndTree(arg string) (window, tree string, err error) {
+
+	// if the user just feeds in a list of (existing) filenames
+	// we assume the user just wants to expose the given filenames
+	// as they are. eg, `ls *.go | xargs knut` and be done with it.
+	if fi, err := os.Stat(arg); err == nil {
+		if fi.IsDir() {
+			return "/" + fi.Name() + "/", arg, nil
+		}
+		return "/" + fi.Name(), arg, nil
+	}
 
 	var parts []string
 	if parts = strings.SplitN(arg, ":", 2); len(parts) != 2 {

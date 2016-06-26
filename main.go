@@ -18,14 +18,15 @@ var version = "knut/1.0"
 func usage() {
 	flag.CommandLine.SetOutput(os.Stdout)
 	fmt.Println(`
-knut [opts] uri:folder [mapping2] [mapping3] [...]
+knut [opts] [uri:]folder-or-file [mapping2] [mapping3] [...]
 
 Sample:
 
-   knut /:. /ding.txt:/tmp/dong.txt
+   knut file.txt /this/:. /ding.txt:/tmp/dong.txt
 
 Mapping Format:
 
+   file.txt                - publish the file "file.txt" via "/file.txt"
    /:.                     - list contents of current directory via "/"
    /uri:folder             - list contents of "folder" via "/uri"
    /uri:file               - serve "file" via "/uri"

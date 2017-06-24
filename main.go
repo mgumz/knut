@@ -13,7 +13,11 @@ import (
 	"strings"
 )
 
-var version = "knut/1.0"
+var (
+	Version   = "1.5.0"
+	GitHash   = ""
+	BuildDate = ""
+)
 
 func usage() {
 	flag.CommandLine.SetOutput(os.Stdout)
@@ -58,19 +62,20 @@ Options:
 func main() {
 
 	opts := struct {
-		bindAddr    string
-		doLog       bool
-		doAuth      string
-		doCompress  bool
-		addServerID string
-		tlsOnetime  bool
-		tlsCert     string
-		tlsKey      string
+		bindAddr       string
+		doLog          bool
+		doAuth         string
+		doCompress     bool
+		doPrintVersion bool
+		addServerID    string
+		tlsOnetime     bool
+		tlsCert        string
+		tlsKey         string
 	}{
 		bindAddr:    ":8080",
 		doLog:       true,
 		doCompress:  true,
-		addServerID: version,
+		addServerID: "knut/" + Version,
 	}
 
 	flag.StringVar(&opts.bindAddr, "bind", opts.bindAddr, "address to bind to")
@@ -81,8 +86,14 @@ func main() {
 	flag.BoolVar(&opts.tlsOnetime, "tls-onetime", opts.tlsOnetime, "use a onetime-in-memory cert+key to drive tls")
 	flag.StringVar(&opts.tlsKey, "tls-key", opts.tlsKey, "use given key to start tls")
 	flag.StringVar(&opts.tlsCert, "tls-cert", opts.tlsCert, "use given cert to start tls")
+	flag.BoolVar(&opts.doPrintVersion, "version", opts.doPrintVersion, "print version")
 	flag.Usage = usage
 	flag.Parse()
+
+	if opts.doPrintVersion == true {
+		fmt.Println(Version, GitHash, BuildDate)
+		os.Exit(0)
+	}
 
 	if flag.NArg() == 0 {
 		fmt.Fprintf(os.Stderr, "error: missing mapping\n")

@@ -47,6 +47,7 @@ Mapping Format:
                              to the given http-host
    /uri:git://folder/      - serves files via "git http-backend"
    /uri:cgit://path/to/dir - serves git-repos via "cgit"
+   /uri:myip://            - serves a "myip" endpoint
 
 Options:
 	`)
@@ -197,6 +198,8 @@ func prepareTrees(muxer *http.ServeMux, mappings []string) (*http.ServeMux, int)
 					handler = httputil.NewSingleHostReverseProxy(treeURL)
 				case "file":
 					handler = fileOrDirHandler(localFilename(treeURL), window)
+				case "myip":
+					handler = myIPHandler()
 				case "qr":
 					qrContent := treeURL.Path
 					if len(qrContent) <= 1 {

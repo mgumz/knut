@@ -39,6 +39,10 @@ httpd-resource.
         /uri:http://1.2.3.4/ - creates a reverse proxy and forwards requests to
                                /uri to the given http-host
 
+        /uri:git://folder/      - serves files via "git http-backend"
+        /uri:cgit://path/to/dir - serves git-repos via "cgit"
+        /uri:myip://            - serves a "myip" endpoint
+
     Options:
 
       -auth="": use 'name:password' to require

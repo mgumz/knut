@@ -1,6 +1,7 @@
 VERSION=1.5.0
 BUILD_DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 GIT_HASH=$(shell git rev-parse HEAD)
+CONTAINER_IMAGE=quay.io/mgumz/knut:$(VERSION)
 
 RELEASES=bin/knut-$(VERSION).linux.amd64 \
 		 bin/knut-$(VERSION).linux.arm64 \
@@ -19,6 +20,9 @@ simple: bin
 
 vendor:
 	go mod tidy
+
+container-image: Dockerfile
+	docker build -f Dockerfile -t $(CONTAINER_IMAGE) .
 
 bin/knut-$(VERSION).linux.mips64: bin
 	env GOOS=linux GOARCH=mips64 CGO_ENABLED=0 go build $(LDFLAGS) -o $@

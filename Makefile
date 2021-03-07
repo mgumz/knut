@@ -12,8 +12,13 @@ RELEASES=bin/knut-$(VERSION).linux.amd64 \
 
 LDFLAGS=-ldflags "-X main.Version=$(VERSION) -X main.BuildDate=$(BUILD_DATE) -X main.GitHash=$(GIT_HASH)"
 
-
 releases: $(RELEASES)
+
+simple: bin
+	go build $(LDFLAGS) -o bin/knut
+
+vendor:
+	go mod tidy
 
 bin/knut-$(VERSION).linux.mips64: bin
 	env GOOS=linux GOARCH=mips64 CGO_ENABLED=0 go build $(LDFLAGS) -o $@
@@ -35,3 +40,7 @@ bin/knut-$(VERSION).freebsd.amd64: bin
 
 bin:
 	mkdir $@
+
+
+.PHONY: vendor
+

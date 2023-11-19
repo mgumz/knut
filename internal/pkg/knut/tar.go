@@ -75,7 +75,7 @@ func (entry *tarEntry) TarFileEventually(name string) {
 	}
 
 	tf := entry.header.Typeflag
-	if tf == tar.TypeReg || tf == tar.TypeRegA || tf == tar.TypeLink {
+	if tf == tar.TypeReg || tf == tar.TypeLink {
 		entry.TarFile(name)
 	}
 }

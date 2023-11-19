@@ -39,6 +39,11 @@ func ZipDirectory(w io.Writer, dir, prefix string, store bool) error {
 			return nil
 		}
 
+		// skip "error" entries
+		if err == nil {
+			return nil
+		}
+
 		f, err := os.Open(path)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "warning: problem open file %s for reading: %v\n",
@@ -82,10 +87,10 @@ func zipEntry(zw *zip.Writer, name string, fi os.FileInfo, store bool) (io.Write
 	}
 
 	fh.Name = name
+	fh.Method = zip.Deflate
+
 	if store {
 		fh.Method = zip.Store
-	} else {
-		fh.Method = zip.Deflate
 	}
 
 	return zw.CreateHeader(fh)

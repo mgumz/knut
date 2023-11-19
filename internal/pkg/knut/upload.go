@@ -6,7 +6,6 @@ package knut
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"mime/multipart"
 	"net"
@@ -78,7 +77,7 @@ input[type="submit"] { margin-top: 1em }
 		}
 
 		fmt.Fprintln(w, htmlDoc)
-		fmt.Fprintf(w, "ok, received %d bytes over %s", nBytes, time.Now().Sub(startTime))
+		fmt.Fprintf(w, "ok, received %d bytes over %s", nBytes, time.Since(startTime))
 	})
 }
 
@@ -97,7 +96,7 @@ func storeFormFile(prefix, dir string, fh *multipart.FileHeader) (int64, error) 
 	}
 	defer postedFile.Close()
 
-	osFile, err := ioutil.TempFile(dir, prefix)
+	osFile, err := os.CreateTemp(dir, prefix)
 	if err != nil {
 		return 0, err
 	}

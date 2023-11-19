@@ -114,7 +114,6 @@ func (ot *OnetimeTLS) fillTLSConfig() {
 		ot.tlsConfig.NextProtos = []string{"http/1.1"}
 		ot.tlsConfig.MinVersion = tls.VersionTLS11
 		ot.tlsConfig.CurvePreferences = []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256}
-		ot.tlsConfig.PreferServerCipherSuites = true
 		ot.tlsConfig.SessionTicketsDisabled = true
 		ot.tlsConfig.Certificates = make([]tls.Certificate, 1)
 		ot.tlsConfig.Certificates[0], ot.err = tls.X509KeyPair(ot.certBytes, ot.privKeyBytes)

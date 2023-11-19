@@ -43,7 +43,7 @@ func ZipFSHandler(name, prefix, index string) http.Handler {
 		if strings.HasSuffix(r.URL.Path, "/") {
 			if index == "" {
 				w.Header().Set("Content-Type", "text/html; charset=utf8")
-				indexFolderEntries(w, z.Reader, name)
+				indexFolderEntries(w, &z.Reader, name)
 				return
 			}
 			r.URL.Path = path.Join(r.URL.Path, index)
@@ -99,7 +99,7 @@ func serveZipEntry(w http.ResponseWriter, zFile *zip.File) {
 
 // indexFolderEntries creates an index pages page of all the file entries
 // in the given "folder"
-func indexFolderEntries(w http.ResponseWriter, zreader zip.Reader, folder string) {
+func indexFolderEntries(w http.ResponseWriter, zreader *zip.Reader, folder string) {
 
 	fmt.Fprint(w, "<pre>")
 	defer fmt.Fprint(w, "</pre>")
@@ -114,7 +114,7 @@ func indexFolderEntries(w http.ResponseWriter, zreader zip.Reader, folder string
 	}
 }
 
-func listFolderEntries(zreader zip.Reader, folder string) []string {
+func listFolderEntries(zreader *zip.Reader, folder string) []string {
 	entries := make([]string, 0)
 	for _, file := range zreader.File {
 

@@ -92,7 +92,7 @@ func main() {
 	flag.Usage = usage
 	flag.Parse()
 
-	if opts.doPrintVersion == true {
+	if opts.doPrintVersion {
 		fmt.Println(Version, GitHash, BuildDate)
 		os.Exit(0)
 	}

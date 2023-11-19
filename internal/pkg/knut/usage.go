@@ -1,9 +1,14 @@
-// generated, do not edit.
+// Copyright 2015 Mathias Gumz. All rights reserved. Use of this source code
+// is governed by a BSD-style license that can be found in the LICENSE file.
 
-package main
+package knut
 
-/*
+import (
+	"flag"
+	"fmt"
+)
 
+const usageText = `
 knut [opts] [uri:]folder-or-file [mapping2] [mapping3] [...]
 
 Sample:
@@ -35,26 +40,12 @@ Mapping Format:
    /uri:cgit://path/to/dir - serves git-repos via "cgit"
    /uri:myip://            - serves a "myip" endpoint
 
- Options:
+`
 
-  -auth string
-    	use 'name:password' to require
-  -bind string
-    	address to bind to (default ":8080")
-  -compress
-    	handle "Accept-Encoding" = "gzip,deflate" (default true)
-  -log
-    	log requests to stdout (default true)
-  -server-id string
-    	add "Server: <val-here>" to the response (default "knut/dev-build")
-  -tls-cert string
-    	use given cert to start tls
-  -tls-key string
-    	use given key to start tls
-  -tls-onetime
-    	use a onetime-in-memory cert+key to drive tls
-  -version
-    	print version
-
-
-*/
+func printUsage(fs *flag.FlagSet) {
+	w := fs.Output()
+	fmt.Fprintln(w, usageText, "Options:")
+	fmt.Fprintln(w)
+	fs.PrintDefaults()
+	fmt.Fprintln(w)
+}

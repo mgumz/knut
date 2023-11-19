@@ -1,4 +1,5 @@
 PROJECT=knut
+PKG=github.com/mgumz/$(PROJECT)
 VERSION=$(shell cat VERSION)
 BUILD_DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 GIT_HASH=$(shell git rev-parse HEAD)
@@ -9,18 +10,19 @@ TARGETS=linux.amd64 	\
 	linux.386 			\
 	linux.arm64 		\
 	linux.mips64 		\
-	windows.amd64.exe 	\
-	freebsd.amd64 		\
 	darwin.amd64 		\
-	darwin.arm64
+	darwin.arm64		\
+	windows.amd64.exe 	\
+	freebsd.amd64
 
 BINARIES=$(addprefix bin/$(PROJECT)-$(VERSION)., $(TARGETS))
 RELEASES=$(subst windows.amd64.tar.gz,windows.amd64.zip,$(foreach r,$(subst .exe,,$(TARGETS)),releases/$(PROJECT)-$(VERSION).$(r).tar.gz))
 
-LDFLAGS=-ldflags "-X main.Version=$(VERSION) -X main.BuildDate=$(BUILD_DATE) -X main.GitHash=$(GIT_HASH)"
+LDFLAGS=-ldflags "-X $(PKG)/internal/pkg/knut.Version=$(VERSION) \
+	-X $(PKG)/internal/pkg/knut.BuildDate=$(BUILD_DATE) \
+	-X $(PKG)/internal/pkg/knut.GitHash=$(GIT_HASH)"
 
-$(PROJECT): 
-	go build -v -o $@ ./cmd/$(PROJECT)
+$(PROJECT): bin/$(PROJECT)
 
 ######################################################
 ## release related
@@ -33,7 +35,6 @@ list-releases:
 clean:
 	rm -f $(BINARIES) $(RELEASES)
 
-$(PROJECT): bin/$(PROJECT)
 bin/$(PROJECT): cmd/$(PROJECT) bin
 	go build -v -o $@ ./$<
 

@@ -3,6 +3,8 @@
 
 package main
 
+//go:generate go run -v ./gen_doc.go -o doc.go
+
 import (
 	"flag"
 	"fmt"
@@ -15,98 +17,28 @@ import (
 	"github.com/mgumz/knut/internal/pkg/knut"
 )
 
-var (
-	Version   = "dev-build"
-	GitHash   = ""
-	BuildDate = ""
-)
-
-func usage() {
-	flag.CommandLine.SetOutput(os.Stdout)
-	fmt.Println(`
-knut [opts] [uri:]folder-or-file [mapping2] [mapping3] [...]
-
-Sample:
-
-   knut file.txt /this/:. /ding.txt:/tmp/dong.txt
-
-Mapping Format:
-
-   file.txt                - publish the file "file.txt" via "/file.txt"
-   /:.                     - list contents of current directory via "/"
-   /uri:folder             - list contents of "folder" via "/uri"
-   /uri:file               - serve "file" via "/uri"
-   /uri:@text              - respond with "text" at "/uri"
-   30x/uri:location        - respond with 301 at "/uri"
-   @/upload:folder         - accept multipart encoded data via POST at "/upload"
-                             and store it inside "folder". A simple upload form
-                             is rendered on GET.
-   /c.tgz:tar+gz://./      - creates a (gzipped) tarball from the current directory
-                             and serves it via "/c.tgz"
-   /z.zip:zip://./         - creates a zip files from the current directory
-                             and serves it via "/z.zip"
-   /z.zip:zipfs://a.zip    - list and servce the content of the entries of an
-                             existing "z.zip" via the "/z.zip": consider a file
-                             "example.txt" inside "z.zip", it will be directly
-                             available via "/z.zip/example.txt"
-   /uri:http://1.2.3.4/    - creates a reverse proxy and forwards requests to /uri
-                             to the given http-host
-   /uri:git://folder/      - serves files via "git http-backend"
-   /uri:cgit://path/to/dir - serves git-repos via "cgit"
-   /uri:myip://            - serves a "myip" endpoint
-
-Options:
-	`)
-	flag.PrintDefaults()
-	fmt.Println()
-}
-
 func main() {
 
-	opts := struct {
-		bindAddr       string
-		doLog          bool
-		doAuth         string
-		doCompress     bool
-		doPrintVersion bool
-		addServerID    string
-		tlsOnetime     bool
-		tlsCert        string
-		tlsKey         string
-	}{
-		bindAddr:    ":8080",
-		doLog:       true,
-		doCompress:  true,
-		addServerID: "knut/" + Version,
-	}
+	opts := knut.SetupFlags(flag.CommandLine)
 
-	flag.StringVar(&opts.bindAddr, "bind", opts.bindAddr, "address to bind to")
-	flag.BoolVar(&opts.doLog, "log", opts.doLog, "log requests to stdout")
-	flag.BoolVar(&opts.doCompress, "compress", opts.doCompress, `handle "Accept-Encoding" = "gzip,deflate"`)
-	flag.StringVar(&opts.doAuth, "auth", "", "use 'name:password' to require")
-	flag.StringVar(&opts.addServerID, "server-id", opts.addServerID, `add "Server: <val-here>" to the response`)
-	flag.BoolVar(&opts.tlsOnetime, "tls-onetime", opts.tlsOnetime, "use a onetime-in-memory cert+key to drive tls")
-	flag.StringVar(&opts.tlsKey, "tls-key", opts.tlsKey, "use given key to start tls")
-	flag.StringVar(&opts.tlsCert, "tls-cert", opts.tlsCert, "use given cert to start tls")
-	flag.BoolVar(&opts.doPrintVersion, "version", opts.doPrintVersion, "print version")
-	flag.Usage = usage
+	flag.CommandLine.SetOutput(os.Stdout)
 	flag.Parse()
 
-	if opts.doPrintVersion {
-		fmt.Println(Version, GitHash, BuildDate)
+	if opts.DoPrintVersion {
+		fmt.Println(knut.Version, knut.GitHash, knut.BuildDate)
 		os.Exit(0)
 	}
 
 	if flag.NArg() == 0 {
 		fmt.Fprintf(os.Stderr, "error: missing mapping\n")
-		usage()
+		flag.Usage()
 		os.Exit(1)
 	}
 
 	tree, nHandlers := prepareTrees(http.NewServeMux(), flag.Args())
 	if nHandlers == 0 {
 		fmt.Fprintf(os.Stderr, "error: not one valid mapping given\n")
-		usage()
+		flag.Usage()
 		os.Exit(1)
 	}
 
@@ -115,22 +47,22 @@ func main() {
 	//
 	var h = http.Handler(tree)
 
-	if opts.addServerID != "" {
-		h = knut.AddServerIDHandler(h, opts.addServerID)
+	if opts.AddServerID != "" {
+		h = knut.AddServerIDHandler(h, opts.AddServerID)
 	}
 	h = knut.NoCacheHandler(h)
-	if opts.doCompress {
+	if opts.DoCompress {
 		h = knut.CompressHandler(h)
 	}
-	if opts.doAuth != "" {
-		parts := strings.SplitN(opts.doAuth, ":", 2)
+	if opts.DoAuth != "" {
+		parts := strings.SplitN(opts.DoAuth, ":", 2)
 		if len(parts) == 0 {
 			fmt.Fprintf(os.Stderr, "error: missing separator for argument to -auth")
 			os.Exit(1)
 		}
 		h = knut.BasicAuthHandler(h, parts[0], parts[1])
 	}
-	if opts.doLog {
+	if opts.DoLog {
 		h = knut.LogRequestHandler(h, os.Stdout)
 	}
 
@@ -139,20 +71,23 @@ func main() {
 	//
 	var run func() error
 	switch {
-	case opts.tlsOnetime:
+	case opts.TlsOnetime:
 		onetime := &knut.OnetimeTLS{}
-		if err := onetime.Create(opts.bindAddr); err != nil {
+		if err := onetime.Create(opts.BindAddr); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(1)
 		}
 		run = func() error { return http.Serve(onetime.Listener, h) }
-	case opts.tlsCert != "" && opts.tlsKey != "":
-		run = func() error { return http.ListenAndServeTLS(opts.bindAddr, opts.tlsCert, opts.tlsKey, h) }
+	case opts.TlsCert != "" && opts.TlsKey != "":
+		run = func() error {
+			server := &http.Server{Addr: opts.BindAddr, Handler: h}
+			return server.ListenAndServeTLS(opts.TlsCert, opts.TlsKey)
+		}
 	default:
-		run = func() error { return http.ListenAndServe(opts.bindAddr, h) }
+		run = func() error { return http.ListenAndServe(opts.BindAddr, h) }
 	}
 
-	fmt.Printf("\nknut started on %s, be aware of the trees!\n\n", opts.bindAddr)
+	fmt.Printf("\nknut started on %s, be aware of the trees!\n\n", opts.BindAddr)
 	if err := run(); err != nil {
 		fmt.Printf("error: %v\n", err)
 		os.Exit(1)

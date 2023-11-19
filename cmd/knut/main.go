@@ -11,10 +11,12 @@ import (
 	"net/url"
 	"os"
 	"strings"
+
+	"github.com/mgumz/knut/internal/pkg/knut"
 )
 
 var (
-	Version   = "1.5.0"
+	Version   = "dev-build"
 	GitHash   = ""
 	BuildDate = ""
 )
@@ -114,11 +116,11 @@ func main() {
 	var h = http.Handler(tree)
 
 	if opts.addServerID != "" {
-		h = addServerIDHandler(h, opts.addServerID)
+		h = knut.AddServerIDHandler(h, opts.addServerID)
 	}
-	h = noCacheHandler(h)
+	h = knut.NoCacheHandler(h)
 	if opts.doCompress {
-		h = compressHandler(h)
+		h = knut.CompressHandler(h)
 	}
 	if opts.doAuth != "" {
 		parts := strings.SplitN(opts.doAuth, ":", 2)
@@ -126,10 +128,10 @@ func main() {
 			fmt.Fprintf(os.Stderr, "error: missing separator for argument to -auth")
 			os.Exit(1)
 		}
-		h = basicAuthHandler(h, parts[0], parts[1])
+		h = knut.BasicAuthHandler(h, parts[0], parts[1])
 	}
 	if opts.doLog {
-		h = logRequestHandler(h, os.Stdout)
+		h = knut.LogRequestHandler(h, os.Stdout)
 	}
 
 	//
@@ -138,12 +140,12 @@ func main() {
 	var run func() error
 	switch {
 	case opts.tlsOnetime:
-		onetime := &onetimeTLS{}
+		onetime := &knut.OnetimeTLS{}
 		if err := onetime.Create(opts.bindAddr); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(1)
 		}
-		run = func() error { return http.Serve(onetime.listener, h) }
+		run = func() error { return http.Serve(onetime.Listener, h) }
 	case opts.tlsCert != "" && opts.tlsKey != "":
 		run = func() error { return http.ListenAndServeTLS(opts.bindAddr, opts.tlsCert, opts.tlsKey, h) }
 	default:
@@ -175,7 +177,7 @@ func prepareTrees(muxer *http.ServeMux, mappings []string) (*http.ServeMux, int)
 
 	for i := range mappings {
 
-		window, tree, err = getWindowAndTree(mappings[i])
+		window, tree, err = knut.GetWindowAndTree(mappings[i])
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "warning: parsing %q (pos %d): %v\n", mappings[i], i+1, err)
 			continue
@@ -192,15 +194,15 @@ func prepareTrees(muxer *http.ServeMux, mappings []string) (*http.ServeMux, int)
 				fmt.Fprintf(os.Stderr, "warning: existing %q is not a directory\n", tree)
 				continue
 			}
-			handler, verb = uploadHandler(tree), "catches"
+			handler, verb = knut.UploadHandler(tree), "catches"
 		case strings.HasPrefix(window, "30x"):
 			if window = window[3:]; window == "" {
 				fmt.Fprintf(os.Stderr, "warning: post uri in pair %d is empty\n", i)
 				continue
 			}
-			handler, verb = redirectHandler(window, tree), "points at"
+			handler, verb = knut.RedirectHandler(window, tree), "points at"
 		case tree[0] == STRING_HANDLER:
-			handler = serveStringHandler(tree[1:])
+			handler = knut.ServeStringHandler(tree[1:])
 		default:
 			if treeURL, err := url.Parse(tree); err == nil {
 				query := treeURL.Query()
@@ -208,9 +210,9 @@ func prepareTrees(muxer *http.ServeMux, mappings []string) (*http.ServeMux, int)
 				case "http", "https":
 					handler = httputil.NewSingleHostReverseProxy(treeURL)
 				case "file":
-					handler = fileOrDirHandler(localFilename(treeURL), window)
+					handler = knut.FileOrDirHandler(knut.LocalFilename(treeURL), window)
 				case "myip":
-					handler = myIPHandler()
+					handler = knut.MyIPHandler()
 				case "qr":
 					qrContent := treeURL.Path
 					if len(qrContent) <= 1 {
@@ -218,36 +220,36 @@ func prepareTrees(muxer *http.ServeMux, mappings []string) (*http.ServeMux, int)
 						continue
 					}
 					qrContent = qrContent[1:] // cut away the leading /
-					handler = qrHandler(qrContent)
-					handler = setContentType(handler, "image/png")
+					handler = knut.QrHandler(qrContent)
+					handler = knut.SetContentType(handler, "image/png")
 				case "git":
-					handler = gitHandler(localFilename(treeURL), window)
+					handler = knut.GitHandler(knut.LocalFilename(treeURL), window)
 				case "cgit":
-					handler = cgitHandler(localFilename(treeURL), window)
+					handler = knut.CgitHandler(knut.LocalFilename(treeURL), window)
 				case "tar":
 					prefix := query.Get("prefix")
-					handler = tarHandler(localFilename(treeURL), prefix)
-					handler = setContentType(handler, "application/x-tar")
+					handler = knut.TarHandler(knut.LocalFilename(treeURL), prefix)
+					handler = knut.SetContentType(handler, "application/x-tar")
 				case "tar+gz", "tar.gz", "tgz":
 					prefix := query.Get("prefix")
 					clevel := query.Get("level")
-					handler = tarHandler(localFilename(treeURL), prefix)
-					handler = gzHandler(handler, clevel)
-					handler = setContentType(handler, "application/x-gtar")
+					handler = knut.TarHandler(knut.LocalFilename(treeURL), prefix)
+					handler = knut.GzHandler(handler, clevel)
+					handler = knut.SetContentType(handler, "application/x-gtar")
 				case "zip":
 					prefix := query.Get("prefix")
-					store := hasQueryParam("store", query)
-					handler = zipHandler(localFilename(treeURL), prefix, store)
-					handler = setContentType(handler, "application/zip")
+					store := knut.HasQueryParam("store", query)
+					handler = knut.ZipHandler(knut.LocalFilename(treeURL), prefix, store)
+					handler = knut.SetContentType(handler, "application/zip")
 				case "zipfs":
 					prefix := query.Get("prefix")
 					index := query.Get("index")
-					handler = zipFSHandler(localFilename(treeURL), prefix, index)
+					handler = knut.ZipFSHandler(knut.LocalFilename(treeURL), prefix, index)
 				}
 			}
 
 			if handler == nil {
-				handler = fileOrDirHandler(tree, window)
+				handler = knut.FileOrDirHandler(tree, window)
 			}
 		}
 

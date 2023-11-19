@@ -1,4 +1,7 @@
-package main
+// Copyright 2015 Mathias Gumz. All rights reserved. Use of this source code
+// is governed by a BSD-style license that can be found in the LICENSE file.
+
+package knut
 
 import (
 	"bytes"
@@ -14,8 +17,9 @@ import (
 	"time"
 )
 
-type onetimeTLS struct {
-	listener     net.Listener
+type OnetimeTLS struct {
+	Listener net.Listener
+
 	privKey      *ecdsa.PrivateKey
 	sn           *big.Int
 	template     *x509.Certificate
@@ -29,7 +33,7 @@ type onetimeTLS struct {
 // (elliptic curve521), and create a tlsListener based upon that certificate.
 // it's only purpose is to have a tls-cert with a onetime, throw-away
 // certificate. fyi: http://safecurves.cr.yp.to/
-func (ot *onetimeTLS) Create(addr string) error {
+func (ot *OnetimeTLS) Create(addr string) error {
 
 	ot.createListener(addr)
 	ot.createPrivateKey()
@@ -40,17 +44,17 @@ func (ot *onetimeTLS) Create(addr string) error {
 	ot.fillTLSConfig()
 
 	if ot.err == nil {
-		ot.listener = tls.NewListener(ot.listener, &ot.tlsConfig)
+		ot.Listener = tls.NewListener(ot.Listener, &ot.tlsConfig)
 	}
 	return ot.err
 }
 
-func (ot *onetimeTLS) createListener(addr string) {
+func (ot *OnetimeTLS) createListener(addr string) {
 	if ot.err == nil {
-		ot.listener, ot.err = net.Listen("tcp", addr)
+		ot.Listener, ot.err = net.Listen("tcp", addr)
 	}
 }
-func (ot *onetimeTLS) createPrivateKey() {
+func (ot *OnetimeTLS) createPrivateKey() {
 	if ot.err == nil {
 		// * in general a good read: https://safecurves.cr.yp.to/
 		// * elliptic.P256/() returns a Curve which implements P-256 (see
@@ -63,12 +67,12 @@ func (ot *onetimeTLS) createPrivateKey() {
 		ot.privKey, ot.err = ecdsa.GenerateKey(curve, rand.Reader)
 	}
 }
-func (ot *onetimeTLS) createSerialNumber(n uint) {
+func (ot *OnetimeTLS) createSerialNumber(n uint) {
 	if ot.err == nil {
 		ot.sn, ot.err = rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), n))
 	}
 }
-func (ot *onetimeTLS) createTemplate() {
+func (ot *OnetimeTLS) createTemplate() {
 	if ot.err == nil {
 		ot.template = &x509.Certificate{
 			SerialNumber: ot.sn,
@@ -89,7 +93,7 @@ func (ot *onetimeTLS) createTemplate() {
 		}
 	}
 }
-func (ot *onetimeTLS) createPKBytes() {
+func (ot *OnetimeTLS) createPKBytes() {
 	if ot.err == nil {
 		ot.privKeyBytes, ot.err = x509.MarshalECPrivateKey(ot.privKey)
 	}
@@ -97,7 +101,7 @@ func (ot *onetimeTLS) createPKBytes() {
 		ot.privKeyBytes = bytesToPem(ot.privKeyBytes, "EC PRIVATE KEY")
 	}
 }
-func (ot *onetimeTLS) createCertBytes() {
+func (ot *OnetimeTLS) createCertBytes() {
 	if ot.err == nil {
 		ot.certBytes, ot.err = x509.CreateCertificate(rand.Reader, ot.template, ot.template, &ot.privKey.PublicKey, ot.privKey)
 	}
@@ -105,7 +109,7 @@ func (ot *onetimeTLS) createCertBytes() {
 		ot.certBytes = bytesToPem(ot.certBytes, "CERTIFICATE")
 	}
 }
-func (ot *onetimeTLS) fillTLSConfig() {
+func (ot *OnetimeTLS) fillTLSConfig() {
 	if ot.err == nil {
 		ot.tlsConfig.NextProtos = []string{"http/1.1"}
 		ot.tlsConfig.MinVersion = tls.VersionTLS11

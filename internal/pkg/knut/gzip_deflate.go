@@ -1,7 +1,7 @@
 // Copyright 2015 Mathias Gumz. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-package main
+package knut
 
 import (
 	"compress/flate"
@@ -12,7 +12,7 @@ import (
 
 // compressHandler requests having Accept-Encoding 'deflate' or 'gzip'
 // taken from https://github.com/gorilla/handlers/blob/master/compress.go
-func compressHandler(handler http.Handler) http.Handler {
+func CompressHandler(handler http.Handler) http.Handler {
 
 	gzPool := newGzPool(gzip.DefaultCompression)
 	flatePool := newFlatePool(flate.DefaultCompression)

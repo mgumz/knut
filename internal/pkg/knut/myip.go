@@ -1,7 +1,7 @@
 // Copyright 2017 Mathias Gumz. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-package main
+package knut
 
 import (
 	"html/template"
@@ -10,7 +10,7 @@ import (
 )
 
 // myIPHandler yells back the remote IP to the browser
-func myIPHandler() http.Handler {
+func MyIPHandler() http.Handler {
 
 	tmpl, _ := template.New("myip").Parse(`<!doctype html>
 <html>

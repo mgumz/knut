@@ -1,7 +1,7 @@
 // Copyright 2015 Mathias Gumz. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-package main
+package knut
 
 import (
 	"fmt"
@@ -19,7 +19,7 @@ import (
 
 // uploadHandler handles uploads to a given 'dir'. for method "GET" an upload-form is
 // rendered, "POST" handles the actual upload
-func uploadHandler(dir string) http.Handler {
+func UploadHandler(dir string) http.Handler {
 
 	const htmlDoc = `<!doctype html>
 <head>

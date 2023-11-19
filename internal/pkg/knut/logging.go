@@ -1,7 +1,7 @@
 // Copyright 2015 Mathias Gumz. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-package main
+package knut
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 
 // logRequestHandler returns a handler which logs all requests to 'writer'. it also captures
 // the status-code
-func logRequestHandler(handler http.Handler, logWriter io.Writer) http.Handler {
+func LogRequestHandler(handler http.Handler, logWriter io.Writer) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var sc = statusCodeCapture{w: w}

@@ -1,7 +1,7 @@
 // Copyright 2016 Mathias Gumz. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-package main
+package knut
 
 import (
 	"archive/zip"
@@ -13,14 +13,14 @@ import (
 	"path/filepath"
 )
 
-func zipHandler(dir, prefix string, store bool) http.Handler {
+func ZipHandler(dir, prefix string, store bool) http.Handler {
 
 	if dir == "" { // "zip://." yields "" after url.Parse()
 		dir = "."
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := zipDirectory(w, dir, prefix, store); err != nil {
+		if err := ZipDirectory(w, dir, prefix, store); err != nil {
 			fmt.Fprintf(os.Stderr, "warning: creating zip of %q: %v\n", dir, err)
 		}
 	})
@@ -28,7 +28,7 @@ func zipHandler(dir, prefix string, store bool) http.Handler {
 
 // zipDirectory creates a .zip from "dir" and writes it to
 // "w". it also prepends "prefix" to each name.
-func zipDirectory(w io.Writer, dir, prefix string, store bool) error {
+func ZipDirectory(w io.Writer, dir, prefix string, store bool) error {
 
 	zw := zip.NewWriter(w)
 	defer zw.Close()

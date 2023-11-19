@@ -1,7 +1,7 @@
 // Copyright 2015 Mathias Gumz. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-package main
+package knut
 
 import (
 	"archive/tar"
@@ -14,7 +14,7 @@ import (
 
 // tarHandler creates a tar-archive from 'dir' on the fly and
 // writes it to 'w'
-func tarHandler(dir, prefix string) http.Handler {
+func TarHandler(dir, prefix string) http.Handler {
 
 	if dir == "" { // "tar://." yields "" after url.Parse()
 		dir = "."
@@ -53,7 +53,9 @@ type tarEntry struct {
 	err    error
 }
 
-func (entry *tarEntry) GetHeader(fi os.FileInfo) { entry.header, entry.err = tar.FileInfoHeader(fi, "") }
+func (entry *tarEntry) GetHeader(fi os.FileInfo) {
+	entry.header, entry.err = tar.FileInfoHeader(fi, "")
+}
 func (entry *tarEntry) SetName(name string) {
 	if entry.err != nil {
 		return

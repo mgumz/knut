@@ -1,7 +1,7 @@
 // Copyright 2015 Mathias Gumz. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-package main
+package knut
 
 import (
 	"compress/gzip"
@@ -11,7 +11,7 @@ import (
 	"strconv"
 )
 
-func gzHandler(next http.Handler, clevel string) http.Handler {
+func GzHandler(next http.Handler, clevel string) http.Handler {
 
 	level, err := atoiInRange(clevel, -1, gzip.BestCompression, gzip.DefaultCompression)
 	if err != nil {

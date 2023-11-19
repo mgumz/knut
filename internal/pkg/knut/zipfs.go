@@ -1,7 +1,7 @@
 // Copyright 2015 Mathias Gumz. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-package main
+package knut
 
 import (
 	"archive/zip"
@@ -25,8 +25,7 @@ import (
 //
 // if the requested path is a folder, use the "index" in that folder to
 // to render the folder entries.
-//
-func zipFSHandler(name, prefix, index string) http.Handler {
+func ZipFSHandler(name, prefix, index string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		// NOTE: yes, we open the zip for every request. this allows to

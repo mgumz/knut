@@ -1,7 +1,7 @@
 // Copyright 2015 Mathias Gumz. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-package main
+package knut
 
 import (
 	"net/url"
@@ -48,7 +48,7 @@ func TestGetWindowAndTree(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		win, tree, err := getWindowAndTree(test.in)
+		win, tree, err := GetWindowAndTree(test.in)
 		t.Logf("case %d: %q => %q,%q,%v", i, test.in, win, tree, err)
 		if win != test.window || tree != test.tree || err != test.err {
 			t.Errorf("case %d: %q,%q,%v (%q) does not match %v",
@@ -69,7 +69,7 @@ func TestLocalFilename(t *testing.T) {
 		if err != nil {
 			t.Errorf("case %d: parsing test.in %q: %v", i, test.in, err)
 		}
-		out := filepath.ToSlash(localFilename(u))
+		out := filepath.ToSlash(LocalFilename(u))
 		t.Logf("case %d: localFilename(%q): %q", i, u.String(), out)
 		if out != test.out {
 			t.Errorf("case %d: localFilename(%q): expected %q, got %q",

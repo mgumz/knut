@@ -61,13 +61,12 @@ The only requirement to build *knut*: A working go-compiler. Check
 http://golang.org for more information on how to setup one. If you
 have a working golang-compiler:
 
-    $> export GOPATH=`pwd`
-    $> go get github.com/mgumz/knut
-    $> ./bin/knut -h
+    $> go install github.com/mgumz/knut@latest
+    $> ~/go/bin/knut -h
 
 If you *need* to install something:
 
-    $> cp ./bin/knut /path/to/final/place
+    $> cp ~/go/bin/knut /path/to/final/place
 
 ## The name
 

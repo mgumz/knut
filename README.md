@@ -1,5 +1,9 @@
 # *knut* - a tiny webserver which throws (file-) trees through a window
 
+[![GitHub Release](https://img.shields.io/github/v/release/mgumz/knut.svg)](https://github.com/mgumz/knut/releases/latest)
+[![Go Report Card](https://goreportcard.com/badge/github.com/mgumz/knut)](https://goreportcard.com/report/github.com/mgumz/knut)
+[![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/mgumz/knut.svg)](https://github.com/mgumz/knut)
+
 I want to make 'folder1' and 'file2' of my home directory public, without
 serving both resources on different http-ports, without exposing the rest
 of my $HOME, without any copying of the files or folders to another place.

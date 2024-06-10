@@ -10,7 +10,7 @@ import (
 	"os/exec"
 )
 
-// gitHandler serves the given directory via "git http-backend". the advantage
+// GitHandler serves the given directory via "git http-backend". the advantage
 // of using "git http-backend" is that it supports the more clever way of
 // offering a git repository (opposite to the dumb http-protocol also possible)
 //
@@ -30,7 +30,7 @@ func GitHandler(path, uri string) http.Handler {
 	return gitHandler
 }
 
-// cgitHandler will call "cgit" via /uri:cgit://path/to/dir. "cgit" uses
+// CgitHandler will call "cgit" via /uri:cgit://path/to/dir. "cgit" uses
 // a configuration file given via the environment variable CGIT_CONFIG. if
 // that file is not given, a simple one is created for the user. that created
 // file is deleted when **knut** shuts down. it's main purpose is to set the

@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-// uploadHandler handles uploads to a given 'dir'. for method "GET" an upload-form is
+// UploadHandler handles uploads to a given 'dir'. for method "GET" an upload-form is
 // rendered, "POST" handles the actual upload
 func UploadHandler(dir string) http.Handler {
 

@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-// compressHandler requests having Accept-Encoding 'deflate' or 'gzip'
+// CompressHandler requests having Accept-Encoding 'deflate' or 'gzip'
 // taken from https://github.com/gorilla/handlers/blob/master/compress.go
 func CompressHandler(handler http.Handler) http.Handler {
 

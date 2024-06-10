@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 )
 
-// tarHandler creates a tar-archive from 'dir' on the fly and
+// TarHandler creates a tar-archive from 'dir' on the fly and
 // writes it to 'w'
 func TarHandler(dir, prefix string) http.Handler {
 
@@ -27,7 +27,7 @@ func TarHandler(dir, prefix string) http.Handler {
 	})
 }
 
-// tarDirectory creates a .tar from "dir" and writes it to
+// TarDirectory creates a .tar from "dir" and writes it to
 // "w". it also prepends "prefix" to each name.
 func tarDirectory(w io.Writer, dir, prefix string) error {
 	tw := tar.NewWriter(w)

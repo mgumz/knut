@@ -17,7 +17,7 @@ var (
 	errEmptyPairParts = fmt.Errorf("empty pair parts")
 )
 
-// getWindowAndTree splits "arg" at the ':' separator. in the context
+// GetWindowAndTree splits "arg" at the ':' separator. in the context
 // of *knut* the first part is called "window" (it is the url-endpoint,
 // essentially), the part after the first ':' is called "the tree", it's
 // the content that will be delivered.

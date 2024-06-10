@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-// logRequestHandler returns a handler which logs all requests to 'writer'. it also captures
+// LogRequestHandler returns a handler which logs all requests to 'writer'. it also captures
 // the status-code
 func LogRequestHandler(handler http.Handler, logWriter io.Writer) http.Handler {
 

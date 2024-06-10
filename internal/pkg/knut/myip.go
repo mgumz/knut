@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-// myIPHandler yells back the remote IP to the browser
+// MyIPHandler yells back the remote IP to the browser
 func MyIPHandler() http.Handler {
 
 	tmpl, _ := template.New("myip").Parse(`<!doctype html>

@@ -17,7 +17,7 @@ import (
 	"strings"
 )
 
-// zipFSHandler provides access to the contents of the .zip file
+// ZipFSHandler provides access to the contents of the .zip file
 // specified by "name".
 //
 // if "prefix" is applied to all requests, eg: a "/foo/bar" request is tried

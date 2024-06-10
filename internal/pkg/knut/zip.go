@@ -26,7 +26,7 @@ func ZipHandler(dir, prefix string, store bool) http.Handler {
 	})
 }
 
-// zipDirectory creates a .zip from "dir" and writes it to
+// ZipDirectory creates a .zip from "dir" and writes it to
 // "w". it also prepends "prefix" to each name.
 func ZipDirectory(w io.Writer, dir, prefix string, store bool) error {
 

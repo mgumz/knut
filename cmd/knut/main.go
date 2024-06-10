@@ -66,6 +66,11 @@ func main() {
 		h = knut.LogRequestHandler(h, os.Stdout)
 	}
 
+	if opts.DoTeeBody {
+		h = knut.FlushBodyHandler(h)
+		h = knut.TeeBodyHandler(h, os.Stdout)
+	}
+
 	//
 	// and .. action.
 	//

@@ -10,6 +10,7 @@ type Opts struct {
 	DoLog          bool
 	DoAuth         string
 	DoCompress     bool
+	DoTeeBody      bool
 	DoPrintVersion bool
 	AddServerID    string
 	TlsOnetime     bool
@@ -29,6 +30,7 @@ func SetupFlags(f *flag.FlagSet) *Opts {
 	f.StringVar(&opts.BindAddr, "bind", opts.BindAddr, "address to bind to")
 	f.BoolVar(&opts.DoLog, "log", opts.DoLog, "log requests to stdout")
 	f.BoolVar(&opts.DoCompress, "compress", opts.DoCompress, `handle "Accept-Encoding" = "gzip,deflate"`)
+	f.BoolVar(&opts.DoTeeBody, "tee-body", opts.DoTeeBody, `dump request.body to stdout`)
 	f.StringVar(&opts.DoAuth, "auth", "", "use 'name:password' to require")
 	f.StringVar(&opts.AddServerID, "server-id", opts.AddServerID, `add "Server: <val-here>" to the response`)
 	f.BoolVar(&opts.TlsOnetime, "tls-onetime", opts.TlsOnetime, "use a onetime-in-memory cert+key to drive tls")

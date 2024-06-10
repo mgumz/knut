@@ -137,7 +137,7 @@ func prepareTrees(muxer *http.ServeMux, mappings []string) (*http.ServeMux, int)
 			handler, verb = knut.UploadHandler(tree), "catches"
 		case strings.HasPrefix(window, "30x"):
 			if window = window[3:]; window == "" {
-				fmt.Fprintf(os.Stderr, "warning: post uri in pair %d is empty\n", i)
+				fmt.Fprintf(os.Stderr, "warning: 30x path in pair %d is empty\n", i)
 				continue
 			}
 			handler, verb = knut.RedirectHandler(window, tree), "points at"

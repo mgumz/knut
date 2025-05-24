@@ -14,6 +14,9 @@ or any other voodoo.
 And sometimes it's quite handy to just tell someone to POST stuff to a
 httpd-resource.
 
+![knut Screenshot](./media/knut.png)
+
+
 ## Usage
 
 ```

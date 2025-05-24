@@ -40,7 +40,7 @@ func ZipDirectory(w io.Writer, dir, prefix string, store bool) error {
 		}
 
 		// skip "error" entries
-		if err == nil {
+		if err != nil {
 			return nil
 		}
 

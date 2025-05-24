@@ -3,8 +3,6 @@
 
 package main
 
-//go:generate go run -v ./gen_doc.go -o doc.go
-
 import (
 	"flag"
 	"fmt"
@@ -96,7 +94,7 @@ func main() {
 	}
 
 	//
-	// and .. action.
+	// and .. action .. almost.
 	//
 	var run func() error
 	switch {

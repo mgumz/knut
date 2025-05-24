@@ -55,6 +55,8 @@ releases/$(PROJECT)-$(VERSION).%.tar.gz: bin/$(PROJECT)-$(VERSION).%
 bin:
 	mkdir $@
 
+generate-docs:
+	go generate ./cmd/knut
 
 container-image:
 	env DOCKER_BUILDKIT=1 docker build \

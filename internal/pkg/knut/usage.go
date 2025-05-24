@@ -38,7 +38,10 @@ Mapping Format:
                              to the given http-host
    /uri:git://folder/      - serves files via "git http-backend"
    /uri:cgit://path/to/dir - serves git-repos via "cgit"
-   /uri:myip://            - serves a "myip" endpoint
+   /uri:myip://            - serves a "myip" endpoint, query-options:
+                             fuzzy - /24 for ipv4; /56 for ipv6
+                             info - api to use for meta data about the ip
+                             supported: "ripe"
 
 `
 

@@ -1,4 +1,6 @@
-// generated, do not edit.
+// generated, do NOT edit.
+//
+//go:generate go run -v ./gen_doc.go -o doc.go
 
 package main
 
@@ -33,28 +35,39 @@ Mapping Format:
                              to the given http-host
    /uri:git://folder/      - serves files via "git http-backend"
    /uri:cgit://path/to/dir - serves git-repos via "cgit"
-   /uri:myip://            - serves a "myip" endpoint
+   /uri:myip://            - serves a "myip" endpoint, query-options:
+                             fuzzy - /24 for ipv4; /56 for ipv6
+                             info - api to use for meta data about the ip
+                             supported: "ripe"
 
  Options:
 
   -auth string
-    	use 'name:password' to require
+        use 'name:password' to require
   -bind string
-    	address to bind to (default ":8080")
+        address to bind to (default ":8080")
   -compress
-    	handle "Accept-Encoding" = "gzip,deflate" (default true)
+        handle "Accept-Encoding" = "gzip,deflate" (default true)
   -log
-    	log requests to stdout (default true)
+        log requests to stdout (default true)
+  -select-addr
+        interactively select -bind address
+  -serve-index
+        create a small index-page, listing the various paths
   -server-id string
-    	add "Server: <val-here>" to the response (default "knut/dev-build")
+        add "Server: <val-here>" to the response (default "knut/dev-build")
+  -show-qr
+        show a QR code to stdout pointing to '/' (useful only if -bind is distinct)
+  -tee-body
+        dump request.body to stdout
   -tls-cert string
-    	use given cert to start tls
+        use given cert to start tls
   -tls-key string
-    	use given key to start tls
+        use given key to start tls
   -tls-onetime
-    	use a onetime-in-memory cert+key to drive tls
+        use a onetime-in-memory cert+key to drive tls
   -version
-    	print version
+        print version
 
 
 */

@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/mgumz/knut/internal/pkg/knut"
 )
@@ -27,11 +28,17 @@ func main() {
 	b := bytes.NewBuffer(nil)
 	kf.SetOutput(b)
 	kf.Usage()
-	fmt.Fprintln(ofile, "// generated, do not edit.")
+
+	docs := b.String()
+	docs = strings.ReplaceAll(docs, "\t", "    ")
+
+	fmt.Fprintln(ofile, "// generated, do NOT edit.")
+	fmt.Fprintln(ofile, "//")
+	fmt.Fprintln(ofile, "//go:generate go run -v ./gen_doc.go -o doc.go")
 	fmt.Fprintln(ofile)
 	fmt.Fprintln(ofile, "package main")
 	fmt.Fprintln(ofile)
 	fmt.Fprintln(ofile, "/*")
-	fmt.Fprintln(ofile, string(b.Bytes()))
+	fmt.Fprintln(ofile, docs)
 	fmt.Fprintln(ofile, "*/")
 }

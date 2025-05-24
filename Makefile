@@ -2,7 +2,7 @@ PROJECT=knut
 PKG=github.com/mgumz/$(PROJECT)
 VERSION=$(shell cat VERSION)
 BUILD_DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
-GIT_HASH=$(shell git rev-parse HEAD)
+GIT_HASH=$(shell git describe --tags --always --dirty --match="v*")
 CONTAINER_IMAGE=quay.io/mgumz/knut:$(VERSION)
 CONTAINER_PLATFORM?=linux/amd64
 
@@ -18,10 +18,11 @@ TARGETS=linux.amd64 	\
 BINARIES=$(addprefix bin/$(PROJECT)-$(VERSION)., $(TARGETS))
 RELEASES=$(subst windows.amd64.tar.gz,windows.amd64.zip,$(foreach r,$(subst .exe,,$(TARGETS)),releases/$(PROJECT)-$(VERSION).$(r).tar.gz))
 
-LDFLAGS=-ldflags "-X $(PKG)/internal/pkg/knut.Version=$(VERSION) \
+LDFLAGS=-trimpath -ldflags "-X $(PKG)/internal/pkg/knut.Version=$(VERSION) \
 	-X $(PKG)/internal/pkg/knut.BuildDate=$(BUILD_DATE) \
 	-X $(PKG)/internal/pkg/knut.GitHash=$(GIT_HASH)"
 
+default: $(PROJECT)
 $(PROJECT): bin/$(PROJECT)
 
 ######################################################

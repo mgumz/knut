@@ -28,6 +28,7 @@ httpd-resource.
         /uri:folder          - list contents of "folder" via "/uri"
         /uri:file            - serve "file" via "/uri"
         /uri:@text           - respond with "text" at "/uri"
+        200/uri:location     - respond with 200 at "/uri"
         30x/uri:location     - respond with 301 at "/uri"
         @/upload:folder      - accept multipart encoded data via POST at "/upload"
                                and store it inside "folder". A simple upload form
@@ -76,8 +77,8 @@ If you *need* to install something:
 
 *knut* or "St. Knut's day" is an annually celebrated festival in sweden /
 finland on 13 January. It marks the end of christmas. Among other
-activities the christmas trees are disposed. Get inspired:
+activities, the christmas trees 🎄🎄 are disposed. Get inspired:
 
-* https://www.youtube.com/watch?v=M2URddFDIcc
-* https://www.youtube.com/watch?v=OGpGGONbTwY
-* https://www.youtube.com/watch?v=nEf5yuyaXgk
+* https://youtu.be/watch?v=OGpGGONbTwY
+* https://youtu.be/watch?v=nEf5yuyaXgk
+* https://youtu.be/watch?v=IBhC4UevoaA

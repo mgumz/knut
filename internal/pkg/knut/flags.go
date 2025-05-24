@@ -10,6 +10,7 @@ type Opts struct {
 	DoLog             bool
 	DoAuth            string
 	DoCompress        bool
+	DoInteractiveBind bool
 	DoTeeBody         bool
 	DoIndexHandler    bool
 	DoShowQR          bool
@@ -32,6 +33,7 @@ func SetupFlags(f *flag.FlagSet) *Opts {
 	f.StringVar(&opts.BindAddr, "bind", opts.BindAddr, "address to bind to")
 	f.BoolVar(&opts.DoLog, "log", opts.DoLog, "log requests to stdout")
 	f.BoolVar(&opts.DoCompress, "compress", opts.DoCompress, `handle "Accept-Encoding" = "gzip,deflate"`)
+	f.BoolVar(&opts.DoInteractiveBind, "select-addr", opts.DoInteractiveBind, `interactively select -bind address`)
 	f.BoolVar(&opts.DoIndexHandler, "serve-index", opts.DoIndexHandler, `create a small index-page, listing the various paths`)
 	f.BoolVar(&opts.DoShowQR, "show-qr", opts.DoShowQR, `show a QR code to stdout pointing to '/' (useful only if -bind is distinct)`)
 	f.BoolVar(&opts.DoTeeBody, "tee-body", opts.DoTeeBody, `dump request.body to stdout`)

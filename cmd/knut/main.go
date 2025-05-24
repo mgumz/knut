@@ -8,9 +8,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 	"os"
 	"strings"
 
@@ -18,6 +17,7 @@ import (
 
 	"github.com/mgumz/knut/internal/pkg/knut"
 	"github.com/mgumz/knut/internal/pkg/knut/handler"
+	"github.com/mgumz/knut/internal/pkg/knut/ui"
 )
 
 func main() {
@@ -30,6 +30,23 @@ func main() {
 	if opts.DoPrintVersion {
 		fmt.Println(knut.Version, knut.GitHash, knut.BuildDate)
 		os.Exit(0)
+	}
+
+	if opts.DoInteractiveBind && strings.HasPrefix(opts.BindAddr, ":") {
+
+		addrs, err := net.InterfaceAddrs()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: retrieving interface addresses: %s\n", err)
+			os.Exit(1)
+		}
+
+		pickedAddr, err := ui.PromptBindAddr(addrs)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: prompt failed %v\n", err)
+			os.Exit(1)
+		}
+
+		opts.BindAddr = pickedAddr + opts.BindAddr
 	}
 
 	if flag.NArg() == 0 {

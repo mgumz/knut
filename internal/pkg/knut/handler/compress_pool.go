@@ -1,7 +1,7 @@
 // Copyright 2016 Mathias Gumz. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-package knut
+package handler
 
 import (
 	"compress/flate"
@@ -22,7 +22,7 @@ type compressPool struct{ sync.Pool }
 func newGzPool(level int) *compressPool {
 	cp := &compressPool{}
 	cp.Pool = sync.Pool{
-		New: func() interface{} {
+		New: func() any {
 			w, _ := gzip.NewWriterLevel(nil, level)
 			return w
 		},
@@ -33,7 +33,7 @@ func newGzPool(level int) *compressPool {
 func newFlatePool(level int) *compressPool {
 	cp := &compressPool{}
 	cp.Pool = sync.Pool{
-		New: func() interface{} {
+		New: func() any {
 			w, _ := flate.NewWriter(nil, level)
 			return w
 		},

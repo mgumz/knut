@@ -5,7 +5,6 @@ package knut
 
 import (
 	"fmt"
-	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -46,13 +45,6 @@ func GetWindowAndTree(arg string) (window, tree string, err error) {
 
 func LocalFilename(fileURL *url.URL) string {
 	return filepath.Join(fileURL.Host, fileURL.Path)
-}
-
-// writeStatus renders the given status code and
-// a text associated with that code
-func writeStatus(w http.ResponseWriter, code int) {
-	w.WriteHeader(code)
-	fmt.Fprintf(w, "%d: %s", code, http.StatusText(code))
 }
 
 func HasQueryParam(key string, vals url.Values) bool {

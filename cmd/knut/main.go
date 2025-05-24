@@ -14,6 +14,8 @@ import (
 	"os"
 	"strings"
 
+	qrcode "github.com/skip2/go-qrcode"
+
 	"github.com/mgumz/knut/internal/pkg/knut"
 	"github.com/mgumz/knut/internal/pkg/knut/handler"
 )
@@ -41,6 +43,10 @@ func main() {
 		fmt.Fprintf(os.Stderr, "error: not one valid mapping given\n")
 		flag.Usage()
 		os.Exit(1)
+	}
+
+	if opts.DoIndexHandler {
+		tree.Handle("/", handler.IndexHandler(windows))
 	}
 
 	//

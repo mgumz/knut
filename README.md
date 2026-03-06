@@ -87,10 +87,10 @@ Mapping Format:
 ## Build & Installing
 
 The only requirement to build *knut*: A working go-compiler. Check
-http://golang.org for more information on how to setup one. If you
+https://go.dev for more information on how to setup one. If you
 have a working golang-compiler:
 
-    $> go install github.com/mgumz/knut@latest
+    $> go install github.com/mgumz/knut/cmd/knut@latest
     $> ~/go/bin/knut -h
 
 If you *need* to install something:

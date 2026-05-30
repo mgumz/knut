@@ -1,0 +1,25 @@
+# golangci-lint configuration (schema v2). See https://golangci-lint.run
+version: "2"
+
+linters:
+  # Keep the implicit default set (errcheck, govet, ineffassign,
+  # staticcheck, unused) and add a few high-signal extras.
+  enable:
+    - bodyclose
+    - gocritic
+    - misspell
+    - unconvert
+
+  exclusions:
+    generated: lax
+    paths:
+      - vendor
+      - samples
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    paths:
+      - vendor

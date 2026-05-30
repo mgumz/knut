@@ -3,7 +3,7 @@
 [![GitHub Release](https://img.shields.io/github/v/release/mgumz/knut.svg)](https://github.com/mgumz/knut/releases/latest)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mgumz/knut)](https://goreportcard.com/report/github.com/mgumz/knut)
 [![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/mgumz/knut.svg)](https://github.com/mgumz/knut)
-[![Container Image](https://ghcr-badge.egpl.dev/mgumz/knut/latest_tag?label=ghcr.io)](https://github.com/mgumz/knut/pkgs/container/knut)
+[![Container Image](./media/ghcr-badge.svg)](https://github.com/mgumz/knut/pkgs/container/knut)
 
 I want to make 'folder1' and 'file2' of my home directory public, without
 serving both resources on different http-ports, without exposing the rest

@@ -78,12 +78,8 @@ func asnRIPE(ip string) string {
 func MyIPHandler(infoAPI string, fuzzy bool) http.Handler {
 
 	retrieveASN := func(mi *myIP) *myIP { return mi }
-	switch infoAPI {
-	case "ripe":
+	if infoAPI == "ripe" {
 		retrieveASN = func(mi *myIP) *myIP { mi.ASN = asnRIPE(mi.IP); return mi }
-		break
-	default:
-		break
 	}
 
 	fuzzyIP := func(mi *myIP) *myIP { return mi }

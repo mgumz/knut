@@ -78,7 +78,7 @@ func main() {
 	}
 	if opts.DoAuth != "" {
 		parts := strings.SplitN(opts.DoAuth, ":", 2)
-		if len(parts) == 0 {
+		if len(parts) != 2 {
 			fmt.Fprintf(os.Stderr, "error: missing separator for argument to -auth")
 			os.Exit(1)
 		}

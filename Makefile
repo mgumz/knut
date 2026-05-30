@@ -5,6 +5,8 @@ BUILD_DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 GIT_HASH=$(shell git describe --tags --always --dirty --match="v*")
 CONTAINER_IMAGE=quay.io/mgumz/knut:$(VERSION)
 CONTAINER_PLATFORM?=linux/amd64
+# container engine to build the image with: docker (default) or podman
+CONTAINER_ENGINE?=docker
 
 TARGETS=linux.amd64 	\
 	linux.386 			\
@@ -59,7 +61,7 @@ generate-docs:
 	go generate ./cmd/knut
 
 container-image:
-	env DOCKER_BUILDKIT=1 docker build \
+	env DOCKER_BUILDKIT=1 $(CONTAINER_ENGINE) build \
 		--file Dockerfile \
 		--platform=$(CONTAINER_PLATFORM) \
 		--build-arg VERSION=$(VERSION) \

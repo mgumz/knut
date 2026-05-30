@@ -2,21 +2,35 @@
 ## -- build environment
 ##
 
-FROM    golang:1.16.0-alpine3.13 AS build-env
+FROM    golang:1.26-alpine AS build-env
 
-ADD     . /src/github.com/mgumz/knut
-# clean out old artifacts
-RUN     rm -fr /src/github.com/mgumz/knut/bin
-RUN     apk add -U --no-cache make git
-RUN     make -C /src/github.com/mgumz/knut simple
+ARG     VERSION=dev
+
+WORKDIR /src
+RUN     apk add -U --no-cache git
+
+# cache deps first
+COPY    go.mod go.sum ./
+COPY    vendor ./vendor
+RUN     go mod verify
+
+COPY    . .
+RUN     CGO_ENABLED=0 go build -trimpath \
+            -ldflags "-X github.com/mgumz/knut/internal/pkg/knut.Version=$VERSION \
+                      -X github.com/mgumz/knut/internal/pkg/knut.GitHash=$VERSION" \
+            -o bin/knut ./cmd/knut
 
 ##
 ## -- runtime environment
 ##
 
-FROM    alpine:3.13 AS rt-env
+FROM    alpine:3.23.4 AS rt-env
 
-COPY    --from=build-env /src/github.com/mgumz/knut/bin/knut /knut
+# git + cgit power the git:// and cgit:// handlers (git http-backend / cgit
+# are invoked as CGI subprocesses).
+RUN     apk add -U --no-cache git cgit
+
+COPY    --from=build-env /src/bin/knut /knut
 
 EXPOSE  8080
 ENTRYPOINT ["/knut"]

@@ -2,7 +2,7 @@ module github.com/mgumz/knut
 
 go 1.23.0
 
-toolchain go1.24.3
+toolchain go1.25.10
 
 require (
 	github.com/charmbracelet/huh v1.0.0

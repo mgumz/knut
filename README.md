@@ -3,6 +3,7 @@
 [![GitHub Release](https://img.shields.io/github/v/release/mgumz/knut.svg)](https://github.com/mgumz/knut/releases/latest)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mgumz/knut)](https://goreportcard.com/report/github.com/mgumz/knut)
 [![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/mgumz/knut.svg)](https://github.com/mgumz/knut)
+[![Container Image](https://ghcr-badge.egpl.dev/mgumz/knut/latest_tag?label=ghcr.io)](https://github.com/mgumz/knut/pkgs/container/knut)
 
 I want to make 'folder1' and 'file2' of my home directory public, without
 serving both resources on different http-ports, without exposing the rest
@@ -96,6 +97,21 @@ have a working golang-compiler:
 If you *need* to install something:
 
     $> cp ~/go/bin/knut /path/to/final/place
+
+## Container Image
+
+Multi-arch (`linux/amd64`, `linux/arm64`) OCI images are published to the
+GitHub Container Registry on every tagged release:
+
+    $> podman pull ghcr.io/mgumz/knut:latest
+
+Serve the current directory via `/`, mapping the container port to the host:
+
+    $> podman run --rm -p 8080:8080 -v "$PWD:/data" ghcr.io/mgumz/knut:latest /:/data
+
+Pin a specific version with a tag, e.g. `ghcr.io/mgumz/knut:1.7.0`. The
+image bundles `git` and `cgit`, so the `git://` and `cgit://` handlers work
+out of the box.
 
 ## The name
 

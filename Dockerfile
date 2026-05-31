@@ -28,9 +28,9 @@ FROM    alpine:3.23.4 AS rt-env
 
 # git + cgit power the git:// and cgit:// handlers (git http-backend / cgit
 # are invoked as CGI subprocesses).
-RUN     apk add -U --no-cache git cgit
+RUN     apk add -U --no-cache git cgit tini
 
 COPY    --from=build-env /src/bin/knut /knut
 
 EXPOSE  8080
-ENTRYPOINT ["/knut"]
+ENTRYPOINT ["/sbin/tini", "--", "/knut"]

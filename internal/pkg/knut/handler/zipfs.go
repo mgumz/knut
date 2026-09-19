@@ -7,14 +7,13 @@ import (
 	"archive/zip"
 	"bytes"
 	"fmt"
-	"html"
 	"io"
 	"mime"
 	"net/http"
 	"os"
 	"path"
-	"sort"
 	"strings"
+	"time"
 )
 
 // ZipFSHandler provides access to the contents of the .zip file
@@ -47,8 +46,11 @@ func ZipFSHandler(name, prefix, index string) http.Handler {
 		// handle folders
 		if strings.HasSuffix(r.URL.Path, "/") {
 			if index == "" {
-				w.Header().Set("Content-Type", "text/html; charset=utf8")
-				indexFolderEntries(w, &z.Reader, name)
+				folder := path.Join(prefix, r.URL.Path[1:])
+				if folder != "" {
+					folder += "/"
+				}
+				indexFolderEntries(w, r, &z.Reader, folder)
 				return
 			}
 			r.URL.Path = path.Join(r.URL.Path, index)
@@ -66,7 +68,7 @@ func ZipFSHandler(name, prefix, index string) http.Handler {
 			break
 		}
 
-		http.NotFound(w, r)
+		writeStatus(w, http.StatusNotFound)
 	})
 }
 
@@ -102,25 +104,22 @@ func serveZipEntry(w http.ResponseWriter, zFile *zip.File) {
 	io.Copy(w, zr)
 }
 
-// indexFolderEntries creates an index pages page of all the file entries
-// in the given "folder"
-func indexFolderEntries(w http.ResponseWriter, zreader *zip.Reader, folder string) {
+// indexFolderEntries renders the entries of "folder" the same way a folder
+// on disk is listed: sortable, with sizes and modification times.
+func indexFolderEntries(w http.ResponseWriter, r *http.Request, zreader *zip.Reader, folder string) {
 
-	fmt.Fprint(w, "<pre>")
-	defer fmt.Fprint(w, "</pre>")
-	if folder != "" {
-		fmt.Fprintln(w, `<a href="../">..</a>`)
-	}
+	list := newListing(requestPath(r), listFolderEntries(zreader, folder),
+		listSortFromQuery(r.URL.Query()), folder != "")
 
-	for _, entry := range listFolderEntries(zreader, folder) {
-		fmt.Fprintf(w, "<a href=\"/%s\">%s</a>\n",
-			html.EscapeString(entry),
-			html.EscapeString(entry[len(folder):]))
-	}
+	writePage(w, listingTmpl, list)
 }
 
-func listFolderEntries(zreader *zip.Reader, folder string) []string {
-	entries := make([]string, 0)
+// listFolderEntries collects the direct children of "folder". zips do not
+// have to carry entries for their folders, so the folders in between are
+// picked up from the names of the entries below them.
+func listFolderEntries(zreader *zip.Reader, folder string) []listEntry {
+
+	entries, seen := make([]listEntry, 0), map[string]bool{}
 	for _, file := range zreader.File {
 
 		// skip entries not children of 'folder'
@@ -128,12 +127,29 @@ func listFolderEntries(zreader *zip.Reader, folder string) []string {
 			continue
 		}
 
-		// only direct children of 'folder'
-		if name := file.Name[len(folder):]; name != "" &&
-			strings.Count(path.Clean(name), "/") == 0 {
-			entries = append(entries, file.Name)
+		name := file.Name[len(folder):]
+		if name == "" {
+			continue
 		}
+
+		isDir, size, mod := strings.HasSuffix(name, "/"),
+			int64(file.UncompressedSize64), file.Modified
+
+		// a name still carrying a separator belongs to a subfolder. that
+		// subfolder is the entry to list, and the timestamp of a child
+		// says nothing about it.
+		if i := strings.IndexByte(strings.TrimSuffix(name, "/"), '/'); i > -1 {
+			name, isDir, size, mod = name[:i], true, 0, time.Time{}
+		}
+		name = strings.TrimSuffix(name, "/")
+
+		if name == "" || seen[name] {
+			continue
+		}
+		seen[name] = true
+
+		entries = append(entries, newListEntry(name, size, mod, isDir))
 	}
-	sort.Strings(entries)
+
 	return entries
 }

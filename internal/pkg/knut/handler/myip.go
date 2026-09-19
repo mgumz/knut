@@ -6,7 +6,6 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"net"
 	"net/http"
 	"net/netip"
@@ -16,6 +15,7 @@ import (
 )
 
 type myIP struct {
+	page
 	IP   string
 	Port string
 	ASN  string
@@ -87,24 +87,17 @@ func MyIPHandler(infoAPI string, fuzzy bool) http.Handler {
 		fuzzyIP = func(mi *myIP) *myIP { mi.IP = fuzzyMyIP(mi.IP); return mi }
 	}
 
-	tmpl, _ := template.New("myip").Parse(`<!doctype html>
-<html>
-	<head>
-		<title>knut - myip</title>
-	</head>
-	<body>
-		<p>Your IP is: <span id="ip">{{ .IP }}</span>:<span id="port">{{.Port}}</span></p>
-		{{ if .ASN -}}
-		<p>Your ASN is: <span id="asn">{{ .ASN }}</span></p>
-		{{ end }}
-	</body>
-</html>`)
+	tmpl := newPageTemplate("myip", `<p>Your IP is: <span id="ip">{{ .IP }}</span>:<span id="port">{{ .Port }}</span></p>
+{{ if .ASN -}}
+<p>Your ASN is: <span id="asn">{{ .ASN }}</span></p>
+{{ end -}}
+`)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ip, port, _ := net.SplitHostPort(r.RemoteAddr)
-		myip := &myIP{IP: ip, Port: port}
+		myip := &myIP{page: newPage("myip"), IP: ip, Port: port}
 		myip = retrieveASN(myip)
 		myip = fuzzyIP(myip)
-		tmpl.Execute(w, myip)
+		writePage(w, tmpl, myip)
 	})
 }

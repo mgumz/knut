@@ -1,0 +1,254 @@
+/* Copyright 2025 Mathias Gumz. All rights reserved. Use of this source code
+ * is governed by a BSD-style license that can be found in the LICENSE file.
+ *
+ * shared styling for every html page knut renders: the index, the directory
+ * listings, the upload form, myip and the status pages. embedded into the
+ * binary and inlined into each page, so it survives any mapping or prefix.
+ *
+ * the look: condensed display type, flat black on white, orange accents and
+ * a footer bar sitting under a solid black rule. the display font is not
+ * shipped with knut, it is used where it happens to be installed and falls
+ * back to whatever condensed face the system has.
+ */
+
+:root {
+	color-scheme: light;
+	--bg: #fff;
+	--fg: #000;
+	--muted: #666;
+	--rule: #000;
+	--hover: #fff2e4;
+	--accent: #f70;
+	--on-accent: #fff;
+	/* the plain accent is too pale to read a name in: darker oranges for
+	 * the entries of a listing, the darkest for the files themselves */
+	--dir: #c25400;
+	--file: #a84800;
+	--display: "Yanone Kaffeesatz", "Oswald", "Roboto Condensed", "Arial Narrow", arial, sans-serif;
+	--mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono", monospace;
+}
+
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+body {
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
+	background: var(--bg);
+	color: var(--fg);
+	font-family: var(--mono);
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+main {
+	/* the wordmark keeps its own column: it is the one thing on the page
+	 * set in the display font, and next to a path in the monospace one no
+	 * shared line ever lines up */
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: 1.5rem;
+	flex: 1;
+	width: 100%;
+	max-width: 64rem;
+	margin: 0 auto;
+	padding: 1.5rem 1.25rem 3rem;
+}
+
+.brand {
+	/* turned on its side, reading upwards along the left edge.
+	 * "writing-mode" turns the box itself, so the column reserves the
+	 * right width; the rotation only flips the direction */
+	writing-mode: vertical-rl;
+	transform: rotate(180deg);
+	flex: 0 0 auto;
+	color: var(--accent);
+	font-family: var(--display);
+	font-size: 2rem;
+	font-weight: 700;
+	line-height: 1;
+}
+
+.page {
+	flex: 1;
+	min-width: 0;
+}
+
+h1 {
+	margin-bottom: 1.25rem;
+	padding-bottom: .35rem;
+	border-bottom: 4px solid var(--rule);
+	font-family: var(--mono);
+	font-size: 1.25rem;
+	font-weight: 400;
+	line-height: 1.2;
+	overflow-wrap: anywhere;
+}
+
+a {
+	color: var(--accent);
+	text-decoration: none;
+}
+
+a:hover,
+a:focus {
+	text-decoration: underline;
+}
+
+p {
+	margin-bottom: .75rem;
+}
+
+.meta {
+	color: var(--muted);
+}
+
+/* the tree knut throws through the window */
+
+pre.tree {
+	margin-bottom: 1rem;
+	color: var(--accent);
+	font-family: var(--mono);
+	line-height: 1.1;
+	white-space: pre;
+}
+
+footer {
+	border-top: 4px solid var(--rule);
+	background: var(--accent);
+	color: var(--on-accent);
+	font-family: var(--display);
+	font-size: 1.5rem;
+	line-height: 3rem;
+	text-align: right;
+}
+
+footer div {
+	padding-right: 4rem;
+}
+
+/* listings: directories on disk and folders inside a zip */
+
+table.listing {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.listing th {
+	padding: 0 .6rem;
+	border-bottom: 2px solid var(--rule);
+	font-family: var(--display);
+	font-size: 1.25rem;
+	font-weight: 700;
+	text-align: left;
+	white-space: nowrap;
+}
+
+.listing th a {
+	color: inherit;
+}
+
+.listing th .arrow {
+	color: var(--accent);
+}
+
+.listing td {
+	padding: .1rem .6rem;
+	white-space: nowrap;
+}
+
+.listing tr:hover td {
+	background: var(--hover);
+}
+
+.listing .name {
+	width: 100%;
+	max-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.listing .type,
+.listing .size,
+.listing .date {
+	color: var(--muted);
+}
+
+.listing .size,
+.listing .date {
+	text-align: right;
+}
+
+.listing .name a {
+	color: var(--file);
+}
+
+.listing .dir .name a {
+	color: var(--dir);
+	font-weight: 700;
+}
+
+/* index of the published mappings */
+
+ul.windows {
+	list-style: none;
+}
+
+ul.windows li {
+	padding: .1rem .6rem;
+}
+
+ul.windows li:hover {
+	background: var(--hover);
+}
+
+/* forms: the upload page */
+
+form {
+	margin-bottom: 1rem;
+}
+
+input[type="file"] {
+	font: inherit;
+	max-width: 100%;
+}
+
+input[type="submit"] {
+	margin-top: 1em;
+	padding: .3rem 1.5rem;
+	border: 0;
+	border-bottom: 4px solid var(--rule);
+	background: var(--accent);
+	color: var(--on-accent);
+	font-family: var(--display);
+	font-size: 1.25rem;
+	cursor: pointer;
+}
+
+input[type="submit"]:hover {
+	background: var(--fg);
+}
+
+/* status pages */
+
+.status .code {
+	font-family: var(--display);
+	font-size: 2rem;
+	font-weight: 700;
+	color: var(--accent);
+}
+
+@media (max-width: 38rem) {
+	.listing .date {
+		display: none;
+	}
+
+	footer div {
+		padding-right: 1.25rem;
+	}
+}

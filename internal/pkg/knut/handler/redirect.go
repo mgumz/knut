@@ -8,6 +8,9 @@ import (
 	"strings"
 )
 
+var redirectTmpl = newPageTemplate("redirect", `<p>moved permanently to <a href="{{ .Location }}">{{ .Location }}</a></p>
+`)
+
 func RedirectHandler(path, location string) http.Handler {
 
 	type uriHostPort struct {
@@ -28,6 +31,20 @@ func RedirectHandler(path, location string) http.Handler {
 			requestURI.Port = r.Host[i+1:]
 		}
 		templ.Execute(buf, &requestURI)
-		http.Redirect(w, r, buf.String(), http.StatusMovedPermanently)
+
+		target := buf.String()
+		if r.Method != http.MethodGet {
+			http.Redirect(w, r, target, http.StatusMovedPermanently)
+			return
+		}
+		if escaped, err := url.Parse(target); err == nil {
+			target = escaped.String()
+		}
+
+		w.Header().Set("Location", target)
+		writePageStatus(w, http.StatusMovedPermanently, redirectTmpl, struct {
+			page
+			Location string
+		}{page: newPage(""), Location: target})
 	})
 }

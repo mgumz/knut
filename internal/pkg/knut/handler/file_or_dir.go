@@ -11,7 +11,7 @@ func FileOrDirHandler(path, uri string) http.Handler {
 		return ServeFileHandler(path)
 	}
 
-	handler := http.FileServer(http.Dir(path))
+	handler := DirListHandler(http.Dir(path))
 	handler = http.StripPrefix(uri, handler)
 	return handler
 }

@@ -12,44 +12,30 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 )
+
+var uploadTmpl = newPageTemplate("upload", `<form method="post" enctype="multipart/form-data">
+<div><input type="file" name="upload_file"></div>
+<div><input type="submit" value="Upload"></div>
+</form>
+`)
+
+var uploadDoneTmpl = newPageTemplate("upload-done", `<p>ok, received {{ .Size }} in {{ .Duration }}</p>
+<p class="meta"><a href="">upload another file</a></p>
+`)
 
 // UploadHandler handles uploads to a given 'dir'. for method "GET" an upload-form is
 // rendered, "POST" handles the actual upload
 func UploadHandler(dir string) http.Handler {
 
-	const htmlDoc = `<!doctype html>
-<head>
-	<title>knut - file upload</title>
-	<style type="text/css">
-* { font-family: monospace }
-input[type="submit"] { margin-top: 1em }
-	</style>
-</head>
-<h1>knut - file upload</h1>`
-
-	const uploadForm = `<form method="post" enctype="multipart/form-data">
-	<div>
-		<div><input type="file" name="upload_file"></div>
-	</div>
-	<div>
-		<input type="submit" value="Upload">
-	</div>
-</form>
-`
-
 	os.MkdirAll(dir, 0777)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		switch r.Method {
 		case "POST":
-		case "GET":
-			defer fmt.Fprint(w, htmlDoc, uploadForm)
-			fallthrough
-		case "HEAD":
-			w.Header().Set("Content-Length", strconv.Itoa(len(htmlDoc)+len(uploadForm)))
+		case "GET", "HEAD":
+			// the body is dropped by net/http for HEAD
+			writePage(w, uploadTmpl, newPage("file upload"))
 			return
 		default:
 			writeStatus(w, http.StatusMethodNotAllowed)
@@ -76,8 +62,16 @@ input[type="submit"] { margin-top: 1em }
 			}
 		}
 
-		fmt.Fprintln(w, htmlDoc)
-		fmt.Fprintf(w, "ok, received %d bytes over %s", nBytes, time.Since(startTime))
+		done := struct {
+			page
+			Size     string
+			Duration string
+		}{
+			page:     newPage("file upload"),
+			Size:     humanSize(nBytes),
+			Duration: time.Since(startTime).String(),
+		}
+		writePage(w, uploadDoneTmpl, done)
 	})
 }
 

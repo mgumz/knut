@@ -52,7 +52,8 @@ func main() {
 	h := buildHandlerChain(tree, opts)
 	run := makeRunner(opts, h)
 
-	fmt.Printf("\nknut started on %s, be aware of the trees!\n\n", opts.BindAddr)
+	fmt.Printf("\n%s\n\nknut started on %s, be aware of the trees!\n\n",
+		knut.Tree, opts.BindAddr)
 
 	showQR(opts)
 

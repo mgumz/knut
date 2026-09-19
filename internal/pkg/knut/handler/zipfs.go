@@ -28,6 +28,11 @@ import (
 func ZipFSHandler(name, prefix, index string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
+		// a stripped window leaves the path without its leading "/"
+		if !strings.HasPrefix(r.URL.Path, "/") {
+			r.URL.Path = "/" + r.URL.Path
+		}
+
 		// NOTE: yes, we open the zip for every request. this allows to
 		// keep *knut* running and deliver trees while the the underlaying
 		// zip gets replaced.

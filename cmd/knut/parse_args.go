@@ -76,6 +76,7 @@ func handlerForMapping(mapping string, pos int) (window, tree string, handler ht
 	case tree[0] == STRING_HANDLER:
 		handler = kh.ServeStringHandler(tree[1:])
 	default:
+		window = subtreeWindow(window, tree)
 		if treeURL, err := url.Parse(tree); err == nil {
 			var skip bool
 			if handler, skip = schemeHandler(treeURL, window); skip {
@@ -88,6 +89,45 @@ func handlerForMapping(mapping string, pos int) (window, tree string, handler ht
 	}
 
 	return window, tree, handler, verb, true
+}
+
+// subtreeSchemes answer below their window instead of at it: a whole tree,
+// a git repository, the entries of a zip. the archive schemes ("tar", "zip",
+// ...) are not among them, those serve a single resource at the window.
+var subtreeSchemes = map[string]bool{
+	"http":  true,
+	"https": true,
+	"git":   true,
+	"cgit":  true,
+	"zipfs": true,
+}
+
+// subtreeWindow publishes a tree as a subtree. http.ServeMux matches a
+// pattern without a trailing "/" exactly, so "/uri" would answer at the
+// window but route nothing below it - every link of a rendered listing
+// would miss the handler. with the "/" the mux also redirects "/uri" to
+// "/uri/" on its own.
+func subtreeWindow(window, tree string) string {
+
+	if strings.HasSuffix(window, "/") {
+		return window
+	}
+
+	local := tree
+	if treeURL, err := url.Parse(tree); err == nil {
+		if subtreeSchemes[treeURL.Scheme] {
+			return window + "/"
+		}
+		if treeURL.Scheme == "file" {
+			local = knut.LocalFilename(treeURL)
+		}
+	}
+
+	if fi, err := os.Stat(local); err == nil && fi.IsDir() {
+		return window + "/"
+	}
+
+	return window
 }
 
 // schemeHandler builds a handler from tree's URL scheme.
@@ -133,7 +173,10 @@ func schemeHandler(treeURL *url.URL, window string) (http.Handler, bool) {
 	case "zipfs":
 		prefix := query.Get("prefix")
 		index := query.Get("index")
-		return kh.ZipFSHandler(knut.LocalFilename(treeURL), prefix, index), false
+		handler := kh.ZipFSHandler(knut.LocalFilename(treeURL), prefix, index)
+		// the handler looks entries up by the request path, so the window
+		// has to be off it - otherwise only a zip mapped to "/" is found
+		return http.StripPrefix(window, handler), false
 	}
 	return nil, false
 }

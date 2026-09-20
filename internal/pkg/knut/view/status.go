@@ -52,7 +52,7 @@ func RequestPath(r *http.Request) string {
 }
 
 // requestURI is the same path still escaped, the shape it can be asked
-// for again in - a link, an "hx-get".
+// for again in - a link, an "hx-get", the content of a qr code.
 func requestURI(r *http.Request) string {
 
 	uri := r.RequestURI

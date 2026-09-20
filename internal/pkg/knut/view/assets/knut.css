@@ -126,6 +126,15 @@ header div {
 	line-height: 1;
 }
 
+.qr {
+	/* the quiet zone the code needs to be read is the white it brings
+	 * along, so it sits on the bar as a white square */
+	align-self: center;
+	margin-left: auto;
+	width: 4rem;
+	height: 4rem;
+}
+
 /* knut is not answering: the bar stays until a knock gets through */
 
 #gone {

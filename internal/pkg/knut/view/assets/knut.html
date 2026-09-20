@@ -30,6 +30,9 @@ are what keep a block starting and ending where its markup does.
 {{- if .Live }} hx-on::send-error="let gone = htmx.find('#gone'); gone.hidden = false; htmx.trigger(gone, 'knut:knock')" hx-on::after-request="if (event.detail.successful) htmx.find('#gone').hidden = true"{{ end }}>
     <header><div><span class="wordmark">knut</span><pre class="tree">{{ .Tree }}</pre>
 {{- if .Live }}<pre class="tree-gone">{{ .TreeGone }}</pre>{{ end }}
+{{- with qrcode .URL }}
+      <img class="qr" src="{{ . }}" alt="{{ $.URL }}" width="64" height="64">
+{{- end }}
     </div></header>
 {{- if .Live }}
     <div id="gone" hidden

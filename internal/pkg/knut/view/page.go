@@ -43,8 +43,9 @@ var pages = template.Must(template.New("knut").Funcs(funcs).Parse(knutHTML))
 
 // funcs is what the markup can call. formatting a byte count is a
 // presentation decision, so the block which shows one makes it - the go
-// side hands over the number.
-var funcs = template.FuncMap{"humansize": humanSize}
+// side hands over the number. the same goes for the uri of a page and the
+// code drawn from it.
+var funcs = template.FuncMap{"humansize": humanSize, "qrcode": qrCode}
 
 // Page carries what the "layout" block needs. Page specific data embeds
 // it, so a "content" template reaches both its own fields and the ones
@@ -59,6 +60,7 @@ type Page struct {
 	Live     bool   // live mode: the page may lean on htmx
 	LiveURI  string // where the layout pulls htmx from
 	Path     string // the uri this page was asked for, empty without a request
+	URL      string // the same uri with scheme and host in front
 }
 
 // NewPage frames "heading" - an empty one renders the bare knut title.
@@ -80,13 +82,13 @@ func NewPage(heading string) Page {
 }
 
 // PageFor frames "heading" for the request which asked for it. a page
-// which knows its own uri can knock on it when the connection breaks;
-// the ones knut renders without a request in hand - the status pages -
-// cannot, and say so without offering to come back.
+// which knows its own uri carries a code pointing at it and can knock on
+// it when the connection breaks; the ones knut renders without a request
+// in hand - the status pages - carry neither.
 func PageFor(r *http.Request, heading string) Page {
 
 	page := NewPage(heading)
-	page.Path = requestURI(r)
+	page.Path, page.URL = requestURI(r), requestURL(r)
 
 	return page
 }

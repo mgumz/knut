@@ -58,9 +58,11 @@ func DirListHandler(fsys http.FileSystem) http.Handler {
 			return
 		}
 
+		// the folder was opened above, not held: by now it may be gone,
+		// and then it is a 404 like any other, not a server error
 		infos, err := dir.Readdir(-1)
 		if err != nil {
-			writeStatus(w, http.StatusInternalServerError)
+			writeStatus(w, statusForError(err))
 			return
 		}
 

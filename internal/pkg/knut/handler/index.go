@@ -12,21 +12,16 @@ import (
 var indexTmpl = view.Template("index")
 
 // IndexHandler lists the published windows on a small index page.
+//
+// the list never changes, the page around it does: it is the uri it was
+// asked for which decides what the header shows, so the index is rendered
+// per request like every other page.
 func IndexHandler(windows []string) http.Handler {
 
-	data := struct {
-		view.Page
-		Windows []string
-	}{Page: view.NewPage(""), Windows: windows}
-
-	body, err := view.Render(indexTmpl, data)
-
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err != nil {
-			view.Status(w, http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write(body)
+		view.Write(w, indexTmpl, struct {
+			view.Page
+			Windows []string
+		}{Page: view.PageFor(r, ""), Windows: windows})
 	})
 }

@@ -39,7 +39,7 @@ func UploadHandler(dir string) http.Handler {
 				view.Page
 				Action string
 			}{
-				Page: view.NewPage("file upload"),
+				Page: view.PageFor(r, "file upload"),
 				// htmx needs the uri spelled out, an empty "hx-post" is
 				// no url to it - and this handler sits at its window,
 				// not below it
@@ -77,7 +77,7 @@ func UploadHandler(dir string) http.Handler {
 			Size     int64
 			Duration string
 		}{
-			Page:     view.NewPage("file upload"),
+			Page:     view.PageFor(r, "file upload"),
 			Size:     nBytes,
 			Duration: time.Since(startTime).String(),
 		}

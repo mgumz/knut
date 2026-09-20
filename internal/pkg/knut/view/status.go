@@ -38,19 +38,29 @@ func Status(w http.ResponseWriter, code int) {
 	w.Write(body)
 }
 
-// RequestPath returns the path as the client asked for it: by the time a
-// listing is rendered, r.URL.Path has lost the prefix of its mapping.
+// RequestPath returns the path as the client asked for it, unescaped for
+// a reader: by the time a listing is rendered, r.URL.Path has lost the
+// prefix of its mapping.
 func RequestPath(r *http.Request) string {
+
+	uri := requestURI(r)
+	if unescaped, err := url.PathUnescape(uri); err == nil {
+		return unescaped
+	}
+
+	return uri
+}
+
+// requestURI is the same path still escaped, the shape it can be asked
+// for again in - a link, an "hx-get".
+func requestURI(r *http.Request) string {
 
 	uri := r.RequestURI
 	if uri == "" {
-		return r.URL.Path
+		return r.URL.EscapedPath()
 	}
 	if i := strings.IndexByte(uri, '?'); i > -1 {
 		uri = uri[:i]
-	}
-	if unescaped, err := url.PathUnescape(uri); err == nil {
-		return unescaped
 	}
 
 	return uri

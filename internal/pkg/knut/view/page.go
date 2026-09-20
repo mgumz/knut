@@ -50,13 +50,15 @@ var funcs = template.FuncMap{"humansize": humanSize}
 // it, so a "content" template reaches both its own fields and the ones
 // below.
 type Page struct {
-	Title   string
-	Heading string
-	Version string
-	Tree    string
-	CSS     template.CSS
-	Live    bool   // live mode: the page may lean on htmx
-	LiveURI string // where the layout pulls htmx from
+	Title    string
+	Heading  string
+	Version  string
+	Tree     string
+	TreeGone string
+	CSS      template.CSS
+	Live     bool   // live mode: the page may lean on htmx
+	LiveURI  string // where the layout pulls htmx from
+	Path     string // the uri this page was asked for, empty without a request
 }
 
 // NewPage frames "heading" - an empty one renders the bare knut title.
@@ -66,14 +68,27 @@ func NewPage(heading string) Page {
 		title += " - " + heading
 	}
 	return Page{
-		Title:   title,
-		Heading: heading,
-		Version: knut.Version,
-		Tree:    knut.Tree,
-		CSS:     template.CSS(knutCSS),
-		Live:    liveEnabled(),
-		LiveURI: knut.LiveAssetURI,
+		Title:    title,
+		Heading:  heading,
+		Version:  knut.Version,
+		Tree:     knut.Tree,
+		TreeGone: knut.TreeGone,
+		CSS:      template.CSS(knutCSS),
+		Live:     liveEnabled(),
+		LiveURI:  knut.LiveAssetURI,
 	}
+}
+
+// PageFor frames "heading" for the request which asked for it. a page
+// which knows its own uri can knock on it when the connection breaks;
+// the ones knut renders without a request in hand - the status pages -
+// cannot, and say so without offering to come back.
+func PageFor(r *http.Request, heading string) Page {
+
+	page := NewPage(heading)
+	page.Path = requestURI(r)
+
+	return page
 }
 
 // Template frames the block "name" of assets/knut.html in the

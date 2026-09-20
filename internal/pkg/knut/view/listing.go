@@ -186,13 +186,13 @@ func (l *listing) watch(sort listSort, state string) {
 		"&" + liveParam + "=" + state
 }
 
-// newListing sorts "entries" and frames them as a page titled by "folder".
-func newListing(folder string, entries []ListEntry, sort listSort, parent bool) listing {
+// newListing sorts "entries" and frames them as the page "r" asked for.
+func newListing(r *http.Request, entries []ListEntry, sort listSort, parent bool) listing {
 
 	sort.apply(entries)
 
 	list := listing{
-		Page:    NewPage(folder),
+		Page:    PageFor(r, RequestPath(r)),
 		Columns: sort.columns(),
 		Entries: entries,
 		Summary: summarize(entries),
@@ -234,7 +234,7 @@ func Listing(w http.ResponseWriter, r *http.Request, dir string, read ReadListin
 	}
 
 	sort := listSortFromQuery(r.URL.Query())
-	list := newListing(RequestPath(r), entries, sort, parent)
+	list := newListing(r, entries, sort, parent)
 	if watchable {
 		list.watch(sort, state)
 	}

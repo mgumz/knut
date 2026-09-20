@@ -43,7 +43,9 @@ func getHX(h http.Handler, target string) *httptest.ResponseRecorder {
 	return rec
 }
 
-var liveURL = regexp.MustCompile(`hx-get="([^"]*)"`)
+// the listing is not the only block which knocks on the server - the bar
+// reporting an absent knut does too, from the layout above it
+var liveURL = regexp.MustCompile(`<div id="listing" hx-get="([^"]*)"`)
 
 // armedURL is the url the rendered listing polls, with the entities of an
 // html attribute resolved - that url is meant to be requested. a listing
@@ -72,7 +74,7 @@ func TestLiveOffRendersNoJavaScript(t *testing.T) {
 	// every page: what must not be there is a script, an attribute for one
 	// or the uri it would be served from
 	for page, body := range bodies {
-		for _, unwanted := range []string{"hx-get", "hx-post", "hx-on", knut.LiveAssetURI, "<script"} {
+		for _, unwanted := range []string{"hx-get", "hx-post", "hx-on", `id="gone"`, knut.LiveAssetURI, "<script"} {
 			if strings.Contains(body, unwanted) {
 				t.Errorf("the %s page mentions %q without -live", page, unwanted)
 			}
@@ -103,6 +105,30 @@ func TestLiveListingIsArmed(t *testing.T) {
 	// screen has to travel with the poll
 	if got := armedURL(t, "/", body); !strings.HasPrefix(got, "/?sort=size&order=desc&live=") {
 		t.Errorf("the listing polls %q", got)
+	}
+}
+
+// a page which cannot reach knut says so. the bar ships hidden with every
+// live page, a failed request un-hides it, and from then on it knocks on
+// the uri the page was asked for until one gets through.
+func TestLiveGoneBarIsShipped(t *testing.T) {
+
+	liveMode(t)
+
+	body := get(DirListHandler(http.Dir(testTree(t))), "/sub/").Body.String()
+
+	for _, want := range []string{
+		`<div id="gone" hidden`,
+		`<pre class="tree-gone">`,
+		`hx-get="/sub/"`,
+		`hx-trigger="knut:knock delay:2s"`,
+		"hx-on::send-error=",
+		"htmx.trigger(gone, 'knut:knock')",
+		"location.reload()",
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("a live page does not render %q", want)
+		}
 	}
 }
 
@@ -325,7 +351,7 @@ func TestLiveListingWithoutAPathIsNotArmed(t *testing.T) {
 
 	body := get(DirListHandler(testFS()), "/").Body.String()
 
-	if strings.Contains(body, "hx-get") {
+	if liveURL.MatchString(body) {
 		t.Error("a listing which cannot be watched armed a poll")
 	}
 	if !strings.Contains(body, "a.txt") {

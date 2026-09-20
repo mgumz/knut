@@ -93,7 +93,7 @@ func MyIPHandler(infoAPI string, fuzzy bool) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ip, port, _ := net.SplitHostPort(r.RemoteAddr)
-		myip := &myIP{Page: view.NewPage("myip"), IP: ip, Port: port}
+		myip := &myIP{Page: view.PageFor(r, "myip"), IP: ip, Port: port}
 		myip = retrieveASN(myip)
 		myip = fuzzyIP(myip)
 		view.Write(w, tmpl, myip)

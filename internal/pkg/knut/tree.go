@@ -12,3 +12,13 @@ const Tree = `     *
   /o*o*o\
  /*o*o*o*\
     |_|`
+
+// TreeGone is the same tree with the star down and the branches hanging:
+// what is left of it where knut does not answer. same six lines and same
+// width as Tree, so swapping one for the other moves nothing around it.
+const TreeGone = `     .
+    \ /
+   \   /
+  \     /
+ \       /
+    |_|`

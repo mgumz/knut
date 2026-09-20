@@ -26,8 +26,15 @@ are what keep a block starting and ending where its markup does.
     <script src="{{ .LiveURI }}" defer></script>
 {{- end }}
   </head>
-  <body>
-    <header><div><span class="wordmark">knut</span><pre class="tree">{{ .Tree }}</pre></div></header>
+  <body
+{{- if .Live }} hx-on::send-error="let gone = htmx.find('#gone'); gone.hidden = false; htmx.trigger(gone, 'knut:knock')" hx-on::after-request="if (event.detail.successful) htmx.find('#gone').hidden = true"{{ end }}>
+    <header><div><span class="wordmark">knut</span><pre class="tree">{{ .Tree }}</pre>
+{{- if .Live }}<pre class="tree-gone">{{ .TreeGone }}</pre>{{ end }}
+    </div></header>
+{{- if .Live }}
+    <div id="gone" hidden
+{{- with .Path }} hx-get="{{ . }}" hx-trigger="knut:knock delay:2s" hx-swap="none" hx-on::after-request="if (event.detail.xhr.status) location.reload()"{{ end }}><div>... is gone.</div></div>
+{{- end }}
     <main>
       <div class="page">
 {{- with .Heading }}

@@ -102,7 +102,8 @@ footer {
 }
 
 header div,
-footer div {
+footer div,
+#gone div {
 	width: 100%;
 	max-width: var(--page);
 	margin: 0 auto;
@@ -125,14 +126,38 @@ header div {
 	line-height: 1;
 }
 
+/* knut is not answering: the bar stays until a knock gets through */
+
+#gone {
+	background: var(--fg);
+	color: var(--bg);
+	font-family: var(--display);
+	font-size: 1.5rem;
+	line-height: 2rem;
+}
+
 /* the tree knut throws through the window */
 
-pre.tree {
+pre.tree,
+pre.tree-gone {
 	color: inherit;
 	font-family: var(--mono);
 	font-size: .5rem;
 	line-height: 1.1;
 	white-space: pre;
+}
+
+pre.tree-gone {
+	display: none;
+	color: var(--fg);
+}
+
+body:has(#gone:not([hidden])) pre.tree {
+	display: none;
+}
+
+body:has(#gone:not([hidden])) pre.tree-gone {
+	display: block;
 }
 
 /* listings: directories on disk and folders inside a zip */

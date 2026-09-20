@@ -4,6 +4,7 @@
 package view
 
 import (
+	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -13,7 +14,8 @@ import (
 func TestListingRenders(t *testing.T) {
 
 	entries := []ListEntry{NewListEntry("a.txt", 12, modTime(15), false)}
-	list := newListing("/", entries, listSort{Key: sortKeyName, Order: orderAsc}, true)
+	r := httptest.NewRequest("GET", "/", nil)
+	list := newListing(r, entries, listSort{Key: sortKeyName, Order: orderAsc}, true)
 
 	body, err := Render(Template("listing"), list)
 	if err != nil {

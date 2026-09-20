@@ -48,6 +48,8 @@ Mapping Format:
         address to bind to (default ":8080")
   -compress
         handle "Accept-Encoding" = "gzip,deflate" (default true)
+  -live
+        listings refresh themselves, uploads report progress (serves htmx at "/.knut/htmx.js")
   -log
         log requests to stdout (default true)
   -select-addr

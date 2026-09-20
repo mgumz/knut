@@ -234,6 +234,24 @@ input[type="submit"]:hover {
 	background: var(--fg);
 }
 
+/* the upload bar of a live form. htmx hides anything carrying
+ * "htmx-indicator" until the request it belongs to is running */
+
+.progress {
+	display: flex;
+	align-items: center;
+	gap: .6rem;
+	margin-top: 1em;
+}
+
+.progress progress {
+	flex: 1;
+	height: .75rem;
+	border: 0;
+	background: var(--hover);
+	accent-color: var(--accent);
+}
+
 /* status pages */
 
 .status .code {

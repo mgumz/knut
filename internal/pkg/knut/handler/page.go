@@ -21,7 +21,8 @@ import (
 //go:embed assets/knut.css
 var knutCSS string
 
-// contentTmpl is the name of the page specific part of the layout.
+// contentTmpl is the name of the page specific part of the layout. htmx
+// asks for it alone, see writePageFor.
 const contentTmpl = "content"
 
 // layoutTmpl is the frame around every page, the block the other ones are
@@ -48,6 +49,8 @@ type page struct {
 	Version string
 	Tree    string
 	CSS     template.CSS
+	Live    bool   // live mode: the page may lean on htmx
+	LiveURI string // where the layout pulls htmx from
 }
 
 // newPage frames "heading" - an empty one renders the bare knut title.
@@ -62,6 +65,8 @@ func newPage(heading string) page {
 		Version: knut.Version,
 		Tree:    knut.Tree,
 		CSS:     template.CSS(knutCSS),
+		Live:    liveEnabled(),
+		LiveURI: knut.LiveAssetURI,
 	}
 }
 
@@ -69,7 +74,8 @@ func newPage(heading string) page {
 // shared knut layout.
 //
 // the block is reached through a "content" of its own rather than by
-// renaming it: the layout asks for "content".
+// renaming it: the layout asks for "content", and so does writePageFor
+// when htmx wants the block alone.
 func newPageTemplate(name string) *template.Template {
 
 	tmpl := template.Must(pages.Clone())
@@ -95,6 +101,20 @@ func renderPage(tmpl *template.Template, data any) ([]byte, error) {
 // writePage renders "data" and sends it as an html response.
 func writePage(w http.ResponseWriter, tmpl *template.Template, data any) {
 	writePageStatus(w, http.StatusOK, tmpl, data)
+}
+
+// writePageFor answers "r" with "data": htmx replaces a piece of a page
+// which is already on screen, so it gets the content template alone.
+// every other client - a browser navigating, curl, wget - gets the page.
+func writePageFor(w http.ResponseWriter, r *http.Request, tmpl *template.Template, data any) {
+
+	if isFragment(r) {
+		if content := tmpl.Lookup(contentTmpl); content != nil {
+			tmpl = content
+		}
+	}
+
+	writePage(w, tmpl, data)
 }
 
 // writePageStatus renders "data" as an html response under "code".

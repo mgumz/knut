@@ -15,6 +15,10 @@ import (
 	"time"
 )
 
+// the live form posts through htmx and reports how far the bytes got. the
+// bar is honest about what it measures: it fills while the browser sends,
+// so it stands at 100% while the last of it is still being written to
+// disk - that is what the note next to it says.
 var uploadTmpl = newPageTemplate("upload")
 
 var uploadDoneTmpl = newPageTemplate("upload-done")
@@ -29,7 +33,17 @@ func UploadHandler(dir string) http.Handler {
 		case "POST":
 		case "GET", "HEAD":
 			// the body is dropped by net/http for HEAD
-			writePage(w, uploadTmpl, newPage("file upload"))
+			form := struct {
+				page
+				Action string
+			}{
+				page: newPage("file upload"),
+				// htmx needs the uri spelled out, an empty "hx-post" is
+				// no url to it - and this handler sits at its window,
+				// not below it
+				Action: requestPath(r),
+			}
+			writePageFor(w, r, uploadTmpl, form)
 			return
 		default:
 			writeStatus(w, http.StatusMethodNotAllowed)
@@ -65,7 +79,12 @@ func UploadHandler(dir string) http.Handler {
 			Size:     humanSize(nBytes),
 			Duration: time.Since(startTime).String(),
 		}
-		writePage(w, uploadDoneTmpl, done)
+
+		// no event is fired at a listing here: the upload form sits at its
+		// own window, so a listing is never in the same document to hear
+		// one. a listing watching the folder the bytes landed in is held
+		// at the server and answers on its own, within a tick.
+		writePageFor(w, r, uploadDoneTmpl, done)
 	})
 }
 

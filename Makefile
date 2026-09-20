@@ -60,6 +60,11 @@ bin:
 generate-docs:
 	go generate ./cmd/knut
 
+# re-fetches the pinned htmx, gzips it and embeds it. another release:
+# cd internal/pkg/knut/handler && go run ./gen_htmx.go -version x.y.z
+generate-htmx:
+	go generate ./internal/pkg/knut/handler
+
 container-image:
 	env DOCKER_BUILDKIT=1 $(CONTAINER_ENGINE) build \
 		--file Dockerfile \

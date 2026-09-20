@@ -5,6 +5,7 @@ package handler
 
 import (
 	"cmp"
+	"net/http"
 	"net/url"
 	"slices"
 	"strconv"
@@ -52,6 +53,7 @@ type listEntry struct {
 
 	bytes int64
 	mod   time.Time
+	sig   uint64 // content fingerprint, 0 when there is none to be had
 }
 
 // Dir marks the rows a listing renders as folders.
@@ -172,6 +174,17 @@ type listing struct {
 	Entries []listEntry
 	Parent  string // link to the enclosing folder, empty at the top
 	Summary string
+	Watch   string // url a live listing polls, empty when it does not
+}
+
+// watch arms the listing for live updates: the rendered block polls the
+// folder it shows and hands "state" - the fingerprint of what is on the
+// screen - back, so a change during the round trip is not sat out.
+//
+// the url is spelled out instead of left empty: an empty "hx-get" is no
+// url to htmx, and the sort has to survive the refresh.
+func (l *listing) watch(sort listSort, state string) {
+	l.Watch = "?sort=" + sort.Key + "&order=" + sort.Order + "&" + liveParam + "=" + state
 }
 
 // newListing sorts "entries" and frames them as a page titled by "folder".
@@ -190,6 +203,46 @@ func newListing(folder string, entries []listEntry, sort listSort, parent bool) 
 	}
 
 	return list
+}
+
+// serveListing answers "r" with the folder "read" lists. it is the whole
+// response path of a listing, shared by the folders on disk and the ones
+// inside a zip - what those two do differently is the read, not what
+// becomes of it.
+//
+// "dir" is the folder on disk whose changes this listing follows: the
+// folder itself for a tree, the folder the zip sits in for a zip. empty
+// means there is nothing to watch, and then the listing renders once and
+// arms no poll - there is no point sending a client back for an answer
+// which can never come.
+//
+// a failed read is handed back instead of answered: what a folder which
+// cannot be read means is the caller's to say.
+func serveListing(w http.ResponseWriter, r *http.Request, dir string, read readListing, parent bool) error {
+
+	entries, state, err := read()
+	if err != nil {
+		return err
+	}
+
+	watchable := liveEnabled() && dir != ""
+
+	// a poll from a live listing showing exactly what is there: hold the
+	// request until the folder moves. one held request per client, woken
+	// by the filesystem.
+	if want := r.URL.Query().Get(liveParam); watchable && want == state {
+		entries, state = watchListing(r.Context(), dir, read, entries, state)
+	}
+
+	sort := listSortFromQuery(r.URL.Query())
+	list := newListing(requestPath(r), entries, sort, parent)
+	if watchable {
+		list.watch(sort, state)
+	}
+
+	writePageFor(w, r, listingTmpl, list)
+
+	return nil
 }
 
 // summarize counts what is in the folder, "du"-style.
@@ -221,4 +274,7 @@ func plural(n int, noun string) string {
 	return strconv.Itoa(n) + " " + noun + "s"
 }
 
+// the whole listing sits in one block, table or bare tree: a live listing
+// swaps that block for the one the server just rendered, and a folder
+// which fell empty (or filled up) swaps along with everything else.
 var listingTmpl = newPageTemplate("listing")

@@ -13,6 +13,7 @@ type Opts struct {
 	DoInteractiveBind bool
 	DoTeeBody         bool
 	DoIndexHandler    bool
+	DoLive            bool
 	DoShowQR          bool
 	DoPrintVersion    bool
 	AddServerID       string
@@ -35,6 +36,7 @@ func SetupFlags(f *flag.FlagSet) *Opts {
 	f.BoolVar(&opts.DoCompress, "compress", opts.DoCompress, `handle "Accept-Encoding" = "gzip,deflate"`)
 	f.BoolVar(&opts.DoInteractiveBind, "select-addr", opts.DoInteractiveBind, `interactively select -bind address`)
 	f.BoolVar(&opts.DoIndexHandler, "serve-index", opts.DoIndexHandler, `create a small index-page, listing the various paths`)
+	f.BoolVar(&opts.DoLive, "live", opts.DoLive, `listings refresh themselves, uploads report progress (serves htmx at "`+LiveAssetURI+`")`)
 	f.BoolVar(&opts.DoShowQR, "show-qr", opts.DoShowQR, `show a QR code to stdout pointing to '/' (useful only if -bind is distinct)`)
 	f.BoolVar(&opts.DoTeeBody, "tee-body", opts.DoTeeBody, `dump request.body to stdout`)
 	f.StringVar(&opts.DoAuth, "auth", "", "use 'name:password' to require")

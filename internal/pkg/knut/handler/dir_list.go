@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -58,25 +59,54 @@ func DirListHandler(fsys http.FileSystem) http.Handler {
 			return
 		}
 
-		// the folder was opened above, not held: by now it may be gone,
-		// and then it is a 404 like any other, not a server error
-		infos, err := dir.Readdir(-1)
-		if err != nil {
+		read := func() ([]listEntry, string, error) { return readDir(fsys, name) }
+
+		// the folder may be gone by now - it was opened above, not held
+		if err := serveListing(w, r, watchDir(fsys, name), read, name != "/"); err != nil {
 			writeStatus(w, statusForError(err))
-			return
 		}
-
-		entries := make([]listEntry, 0, len(infos))
-		for _, fi := range infos {
-			entries = append(entries,
-				newListEntry(fi.Name(), fi.Size(), fi.ModTime(), fi.IsDir()))
-		}
-
-		list := newListing(requestPath(r), entries,
-			listSortFromQuery(r.URL.Query()), name != "/")
-
-		writePage(w, listingTmpl, list)
 	})
+}
+
+// watchDir is the folder on disk behind "name", the one a live listing
+// follows. it is empty when there is none.
+//
+// knut publishes trees as http.Dir; anything else - an in-memory tree in
+// a test, an fs.FS handed to http.FS - has no path to give a watcher, and
+// a listing of it simply does not refresh itself.
+func watchDir(fsys http.FileSystem, name string) string {
+
+	dir, ok := fsys.(http.Dir)
+	if !ok {
+		return ""
+	}
+
+	return filepath.Join(string(dir), filepath.FromSlash(name))
+}
+
+// readDir lists the folder "name" below "fsys" as the rows of a listing,
+// together with the fingerprint of what it saw. a live listing reads the
+// same folder over and over, so this is one call, not an open handle.
+func readDir(fsys http.FileSystem, name string) ([]listEntry, string, error) {
+
+	dir, err := fsys.Open(name)
+	if err != nil {
+		return nil, "", err
+	}
+	defer dir.Close()
+
+	infos, err := dir.Readdir(-1)
+	if err != nil {
+		return nil, "", err
+	}
+
+	entries := make([]listEntry, 0, len(infos))
+	for _, fi := range infos {
+		entries = append(entries,
+			newListEntry(fi.Name(), fi.Size(), fi.ModTime(), fi.IsDir()))
+	}
+
+	return entries, liveState(entries), nil
 }
 
 // statusForError makes of an open error what http.FileServer would make

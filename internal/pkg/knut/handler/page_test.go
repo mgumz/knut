@@ -56,7 +56,7 @@ func pageTemplates() []struct {
 				page
 				Action string
 			}{page: newPage("file upload"), Action: "/upload"},
-			want: []string{`<form method="post"`, `type="file"`, `name="upload_file"`},
+			want: []string{`<div id="upload">`, `type="file"`, `name="upload_file"`},
 		}, {
 			name: "upload-done",
 			tmpl: uploadDoneTmpl,
@@ -106,6 +106,37 @@ func TestPageTemplatesRender(t *testing.T) {
 			// between the heading and the footer
 			if _, body, _ := strings.Cut(rendered, `<div class="page">`); len(strings.TrimSpace(body)) < 60 {
 				t.Errorf("the %q page renders an empty layout", page.name)
+			}
+		})
+	}
+}
+
+// htmx gets the block alone: same markup, no layout around it
+func TestPageTemplatesRenderAsFragment(t *testing.T) {
+
+	liveMode(t)
+
+	for _, page := range pageTemplates() {
+		t.Run(page.name, func(t *testing.T) {
+
+			content := page.tmpl.Lookup(contentTmpl)
+			if content == nil {
+				t.Fatalf("the %q page has no %q template", page.name, contentTmpl)
+			}
+
+			body, err := renderPage(content, page.data)
+			if err != nil {
+				t.Fatalf("rendering the %q fragment: %v", page.name, err)
+			}
+
+			fragment := string(body)
+			if strings.Contains(fragment, "<!doctype html>") {
+				t.Errorf("the %q fragment carries the layout", page.name)
+			}
+			for _, want := range page.want {
+				if !strings.Contains(fragment, want) {
+					t.Errorf("the %q fragment does not render %q", page.name, want)
+				}
 			}
 		})
 	}

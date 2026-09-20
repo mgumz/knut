@@ -63,6 +63,8 @@ Mapping Format:
     	address to bind to (default ":8080")
   -compress
     	handle "Accept-Encoding" = "gzip,deflate" (default true)
+  -live
+    	listings refresh themselves, uploads report progress (serves htmx at "/.knut/htmx.js")
   -log
     	log requests to stdout (default true)
   -select-addr
@@ -84,6 +86,36 @@ Mapping Format:
   -version
     	print version
 ```
+
+## Live Views
+
+`-live` makes the rendered pages move:
+
+    $> knut -live /:. @/upload:/tmp/incoming
+
+* a listing refreshes itself. it holds one request open at the server,
+  which the filesystem wakes the moment the folder changes - a file
+  dropped into it shows up at once, and the chosen sort order survives the
+  refresh. nothing is scanned on a timer: a folder nobody looks at costs
+  nothing, and a folder ten people look at is watched once.
+* the upload form posts in place and reports how far the bytes got. the bar
+  measures the upload, so it stands at 100% while the last of it is still
+  being written - the note next to it says so.
+
+This is the one flag which puts javascript on the page: it serves a
+vendored [htmx](https://htmx.org) (0BSD, ~51 kb, gzipped into the binary)
+at the reserved uri `/.knut/htmx.js`. Without the flag *knut* renders
+exactly the html it always did - no script tag, no reserved uri, still
+usable with `curl`, `wget` or `lynx`.
+
+Live listings lean on the filesystem reporting its own changes (inotify,
+kqueue, `ReadDirectoryChangesW`). A tree served off a network mount - NFS,
+SMB - reports nothing of the sort: such a listing renders and stays put
+until it is reloaded by hand.
+
+To vendor another htmx release:
+
+    $> go generate ./internal/pkg/knut/handler
 
 ## Build & Installing
 

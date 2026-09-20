@@ -39,12 +39,16 @@ func main() {
 		os.Exit(1)
 	}
 
+	handler.SetLive(opts.DoLive)
+
 	tree, windows := prepareTrees(http.NewServeMux(), flag.Args())
 	if len(windows) == 0 {
 		fmt.Fprintf(os.Stderr, "error: not one valid mapping given\n")
 		flag.Usage()
 		os.Exit(1)
 	}
+
+	warnReservedWindows(opts, windows)
 
 	if opts.DoIndexHandler {
 		serveIndex(tree, windows)
@@ -85,6 +89,21 @@ func serveIndex(tree *http.ServeMux, windows []string) {
 	tree.Handle("/", handler.IndexHandler(windows))
 }
 
+// warnReservedWindows points out mappings live mode sits on top of: the
+// htmx asset is answered before the muxer is reached, so a window of the
+// same name is published but never called.
+func warnReservedWindows(opts *knut.Opts, windows []string) {
+	if !opts.DoLive {
+		return
+	}
+	for _, window := range windows {
+		if window == knut.LiveAssetURI {
+			fmt.Fprintf(os.Stderr, "warning: -live serves htmx at %q, the mapping there is shadowed\n",
+				knut.LiveAssetURI)
+		}
+	}
+}
+
 // resolveBindAddr optionally prompts for a concrete interface address when the
 // user asked for interactive binding and only gave a port (":port").
 func resolveBindAddr(opts *knut.Opts) string {
@@ -116,6 +135,12 @@ func buildHandlerChain(tree http.Handler, opts *knut.Opts) http.Handler {
 	h = handler.NoCacheHandler(h)
 	if opts.DoCompress {
 		h = handler.CompressHandler(h)
+	}
+	if opts.DoLive {
+		// above the compressor: the htmx asset is embedded gzipped and
+		// goes out that way. it brings its own caching headers too, the
+		// one resource knut serves which is worth caching.
+		h = handler.LiveAssetHandler(h)
 	}
 	if opts.DoAuth != "" {
 		parts := strings.SplitN(opts.DoAuth, ":", 2)

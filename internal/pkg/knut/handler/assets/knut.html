@@ -6,8 +6,8 @@ body of one page - newPageTemplate in page.go picks one by name and points
 "content" at it.
 
 a block is handed the data of its handler, which embeds "page": .Title,
-.Heading, .Version, .Tree and .CSS are there for all of them, the rest is
-per block and named below.
+.Heading, .Version, .Tree, .CSS, .Live and .LiveURI are there for all of
+them, the rest is per block and named below.
 
 the whitespace is part of the output: "{{ define ... -}}" and "{{- end }}"
 are what keep a block starting and ending where its markup does.
@@ -17,60 +17,72 @@ are what keep a block starting and ending where its markup does.
 {{ define "layout" -}}
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ .Title }}</title>
-<style>{{ .CSS }}</style>
-</head>
-<body>
-<main>
-<div class="brand">knut</div>
-<div class="page">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ .Title }}</title>
+    <style>{{ .CSS }}</style>
+{{- if .Live }}
+    <script src="{{ .LiveURI }}" defer></script>
+{{- end }}
+  </head>
+  <body>
+    <main>
+      <div class="brand">knut</div>
+      <div class="page">
 {{- with .Heading }}
-<h1>{{ . }}</h1>
+        <h1>{{ . }}</h1>
 {{- end }}
 {{ template "content" . }}
-</div>
-</main>
-<footer><div>knut {{ .Version }}</div></footer>
-</body>
+      </div>
+    </main>
+    <footer><div>knut {{ .Version }}</div></footer>
+  </body>
 </html>
 {{ end }}
 
-{{/* listing: .Columns, .Entries, .Parent, .Summary */}}
+{{/*
+listing: .Columns, .Entries, .Parent, .Summary, .Watch
+
+the whole listing sits in one block, table or bare tree: a live listing
+swaps that block for the one the server just rendered, and a folder which
+fell empty (or filled up) swaps along with everything else.
+*/}}
 {{ define "listing" -}}
-{{ if not .Entries }}
-<pre class="tree">{{ .Tree }}</pre>
-<p>this tree is bare.</p>
+<div id="listing"{{ with .Watch }} hx-get="{{ . }}" hx-trigger="load" hx-select="#listing" hx-swap="outerHTML"{{ end }}>
+{{- if not .Entries }}
+  <pre class="tree">{{ .Tree }}</pre>
+  <p>this tree is bare.</p>
 {{- with .Parent }}
-<p><a href="{{ . }}">../</a></p>
+  <p><a href="{{ . }}">../</a></p>
 {{- end }}
 {{ else }}
 <table class="listing">
-<thead>
-<tr>
+  <thead>
+    <tr>
 {{- range .Columns }}
-<th class="{{ .Key }}"><a href="{{ .URL }}">{{ .Key }}<span class="arrow">{{ .Arrow }}</span></a></th>
+      <th class="{{ .Key }}"><a href="{{ .URL }}">{{ .Key }}<span class="arrow">{{ .Arrow }}</span></a></th>
 {{- end }}
-</tr>
-</thead>
-<tbody>
+    </tr>
+  </thead>
+  <tbody>
 {{- with .Parent }}
-<tr class="dir"><td class="name"><a href="{{ . }}">../</a></td><td class="type">dir</td><td class="size">-</td><td class="date">-</td></tr>
+    <tr class="dir"><td class="name"><a href="{{ . }}">../</a></td><td class="type">dir</td><td class="size">-</td><td class="date">-</td></tr>
 {{- end }}
 {{- range .Entries }}
-<tr{{ if .Dir }} class="dir"{{ end }}>
-<td class="name"><a href="{{ .URL }}">{{ .Name }}</a></td>
-<td class="type">{{ .Type }}</td>
-<td class="size">{{ .Size }}</td>
-<td class="date"><time datetime="{{ .ISO }}">{{ .Date }}</time></td>
-</tr>
+    <tr{{ if .Dir }} class="dir"{{ end }}>
+      <td class="name"><a href="{{ .URL }}">{{ .Name }}</a></td>
+      <td class="type">{{ .Type }}</td>
+      <td class="size">{{ .Size }}</td>
+      <td class="date"><time datetime="{{ .ISO }}">{{ .Date }}</time></td>
+    </tr>
 {{- end }}
-</tbody>
+  </tbody>
 </table>
 {{ end }}
+
 <p class="meta">{{ .Summary }}</p>
+</div>
 {{ end }}
 
 {{/* index: .Windows */}}
@@ -78,7 +90,7 @@ are what keep a block starting and ending where its markup does.
 <pre class="tree">{{ .Tree }}</pre>
 <ul class="windows">
 {{- range .Windows }}
-<li><a href=".{{ . }}">{{ . }}</a></li>
+  <li><a href=".{{ . }}">{{ . }}</a></li>
 {{- end }}
 </ul>
 {{ end }}
@@ -89,12 +101,30 @@ are what keep a block starting and ending where its markup does.
 <p class="status"><span class="code">{{ .Code }}</span> {{ .Text }}</p>
 {{ end }}
 
-{{/* upload */}}
+{{/*
+upload: .Action
+
+the live form posts through htmx and reports how far the bytes got. the
+bar is honest about what it measures: it fills while the browser sends, so
+it stands at 100% while the last of it is still being written to disk -
+that is what the note next to it says.
+*/}}
 {{ define "upload" -}}
-<form method="post" enctype="multipart/form-data">
-<div><input type="file" name="upload_file"></div>
-<div><input type="submit" value="Upload"></div>
-</form>
+<div id="upload">
+  <form method="post" enctype="multipart/form-data"
+{{- if .Live }} hx-post="{{ .Action }}" hx-encoding="multipart/form-data" hx-target="#upload" hx-swap="innerHTML"
+ hx-on::xhr:progress="let bar = htmx.find('#upload-progress'), total = event.detail.total; bar.value = total ? event.detail.loaded / total * 100 : 0; htmx.find('#upload-note').textContent = bar.value < 100 ? '' : 'storing ...'"
+{{- end }}>
+    <div><input type="file" name="upload_file"></div>
+    <div><input type="submit" value="Upload"></div>
+{{- if .Live }}
+    <div class="progress htmx-indicator">
+      <progress id="upload-progress" value="0" max="100"></progress>
+      <span id="upload-note" class="meta"></span>
+    </div>
+{{- end }}
+  </form>
+</div>
 {{ end }}
 
 {{/* upload-done: .Size, .Duration */}}

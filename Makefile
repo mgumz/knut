@@ -20,12 +20,34 @@ TARGETS=linux.amd64 	\
 BINARIES=$(addprefix bin/$(PROJECT)-$(VERSION)., $(TARGETS))
 RELEASES=$(subst windows.amd64.tar.gz,windows.amd64.zip,$(foreach r,$(subst .exe,,$(TARGETS)),releases/$(PROJECT)-$(VERSION).$(r).tar.gz))
 
-LDFLAGS=-trimpath -ldflags "-X $(PKG)/internal/pkg/knut.Version=$(VERSION) \
+# the stamps every build carries
+VERSIONFLAGS=-X $(PKG)/internal/pkg/knut.Version=$(VERSION) \
 	-X $(PKG)/internal/pkg/knut.BuildDate=$(BUILD_DATE) \
-	-X $(PKG)/internal/pkg/knut.GitHash=$(GIT_HASH)"
+	-X $(PKG)/internal/pkg/knut.GitHash=$(GIT_HASH)
+
+LDFLAGS=-trimpath -ldflags "$(VERSIONFLAGS)"
+
+# "-s -w" drops the symbol table and the dwarf info - about a third of the
+# binary, 16.5 MB down to 11.4 MB on linux/arm64, see
+# ai.scratchpad/report.binary-size.md.
+#
+# it is not the default and not what the cross builds use: a stripped
+# binary panics without function names or line numbers and takes no
+# debugger. for debugging, the symbols are the point.
+STRIPPEDLDFLAGS=-trimpath -ldflags "-s -w $(VERSIONFLAGS)"
+
+# the flags bin/$(PROJECT) is built with. empty by default, the
+# $(PROJECT)-release target below swaps them out for the stripped ones -
+# the binary is bin/$(PROJECT) either way, only the way there differs.
+GOLDFLAGS=
+GOENV=
 
 default: $(PROJECT)
 $(PROJECT): bin/$(PROJECT)
+
+$(PROJECT)-release: GOLDFLAGS=$(STRIPPEDLDFLAGS)
+$(PROJECT)-release: GOENV=CGO_ENABLED=0
+$(PROJECT)-release: bin/$(PROJECT)
 
 ######################################################
 ## release related
@@ -36,10 +58,10 @@ releases: $(RELEASES)
 list-releases:
 	@echo $(RELEASES)|tr ' ' '\n'
 clean:
-	rm -f $(BINARIES) $(RELEASES)
+	rm -f $(BINARIES) $(RELEASES) bin/$(PROJECT)
 
 bin/$(PROJECT): cmd/$(PROJECT) bin
-	go build -v -o $@ ./$<
+	env $(GOENV) go build -v $(GOLDFLAGS) -o $@ ./$<
 
 bin/$(PROJECT)-$(VERSION).%:
 	env GOARCH=$(subst .,,$(suffix $(subst .exe,,$@))) GOOS=$(subst .,,$(suffix $(basename $(subst .exe,,$@)))) CGO_ENABLED=0 \
@@ -123,3 +145,4 @@ test:
 	go test -v ./cmd/$(PROJECT)
 
 .PHONY: $(PROJECT) bin/$(PROJECT) binaries releases
+.PHONY: $(PROJECT)-release

@@ -91,7 +91,7 @@ func TestPageTemplatesRender(t *testing.T) {
 
 			rendered := string(body)
 			for _, want := range append(page.want,
-				"<!doctype html>", `<div class="brand">knut</div>`, "</html>\n") {
+				"<!doctype html>", `<span class="wordmark">knut</span>`, "</html>\n") {
 				if !strings.Contains(rendered, want) {
 					t.Errorf("the %q page does not render %q", page.name, want)
 				}

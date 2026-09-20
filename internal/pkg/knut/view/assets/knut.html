@@ -27,8 +27,8 @@ are what keep a block starting and ending where its markup does.
 {{- end }}
   </head>
   <body>
+    <header><div><span class="wordmark">knut</span><pre class="tree">{{ .Tree }}</pre></div></header>
     <main>
-      <div class="brand">knut</div>
       <div class="page">
 {{- with .Heading }}
         <h1>{{ . }}</h1>
@@ -51,7 +51,6 @@ fell empty (or filled up) swaps along with everything else.
 {{ define "listing" -}}
 <div id="listing"{{ with .Watch }} hx-get="{{ . }}" hx-trigger="load" hx-select="#listing" hx-swap="outerHTML"{{ end }}>
 {{- if not .Entries }}
-  <pre class="tree">{{ .Tree }}</pre>
   <p>this tree is bare.</p>
 {{- with .Parent }}
   <p><a href="{{ . }}">../</a></p>
@@ -81,13 +80,12 @@ fell empty (or filled up) swaps along with everything else.
 </table>
 {{ end }}
 
-<p class="meta">{{ .Summary }}</p>
+<p class="meta summary">{{ .Summary }}</p>
 </div>
 {{ end }}
 
 {{/* index: .Windows */}}
 {{ define "index" -}}
-<pre class="tree">{{ .Tree }}</pre>
 <ul class="windows">
 {{- range .Windows }}
   <li><a href=".{{ . }}">{{ . }}</a></li>
@@ -97,7 +95,6 @@ fell empty (or filled up) swaps along with everything else.
 
 {{/* status: .Code, .Text */}}
 {{ define "status" -}}
-<pre class="tree">{{ .Tree }}</pre>
 <p class="status"><span class="code">{{ .Code }}</span> {{ .Text }}</p>
 {{ end }}
 

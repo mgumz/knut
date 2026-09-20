@@ -5,10 +5,8 @@
  * listings, the upload form, myip and the status pages. embedded into the
  * binary and inlined into each page, so it survives any mapping or prefix.
  *
- * the look: condensed display type, flat black on white, orange accents and
- * a footer bar sitting under a solid black rule. the display font is not
- * shipped with knut, it is used where it happens to be installed and falls
- * back to whatever condensed face the system has.
+ * the display font is not shipped with knut, it is used where it happens to
+ * be installed and falls back to whatever condensed face the system has.
  */
 
 :root {
@@ -26,6 +24,9 @@
 	--file: #a84800;
 	--display: "Yanone Kaffeesatz", "Oswald", "Roboto Condensed", "Arial Narrow", arial, sans-serif;
 	--mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono", monospace;
+	/* the column everything which is not a bar is measured against */
+	--page: 64rem;
+	--gutter: 1.25rem;
 }
 
 * {
@@ -46,37 +47,11 @@ body {
 }
 
 main {
-	/* the wordmark keeps its own column: it is the one thing on the page
-	 * set in the display font, and next to a path in the monospace one no
-	 * shared line ever lines up */
-	display: flex;
-	flex-wrap: wrap;
-	align-items: flex-start;
-	gap: 1.5rem;
 	flex: 1;
 	width: 100%;
-	max-width: 64rem;
+	max-width: var(--page);
 	margin: 0 auto;
-	padding: 1.5rem 1.25rem 3rem;
-}
-
-.brand {
-	/* turned on its side, reading upwards along the left edge.
-	 * "writing-mode" turns the box itself, so the column reserves the
-	 * right width; the rotation only flips the direction */
-	writing-mode: vertical-rl;
-	transform: rotate(180deg);
-	flex: 0 0 auto;
-	color: var(--accent);
-	font-family: var(--display);
-	font-size: 2rem;
-	font-weight: 700;
-	line-height: 1;
-}
-
-.page {
-	flex: 1;
-	min-width: 0;
+	padding: 1.5rem var(--gutter) 3rem;
 }
 
 h1 {
@@ -108,28 +83,56 @@ p {
 	color: var(--muted);
 }
 
-/* the tree knut throws through the window */
+header,
+footer {
+	background: var(--accent);
+	color: var(--on-accent);
+	font-family: var(--display);
+}
 
-pre.tree {
-	margin-bottom: 1rem;
-	color: var(--accent);
-	font-family: var(--mono);
-	line-height: 1.1;
-	white-space: pre;
+header {
+	border-bottom: 4px solid var(--rule);
 }
 
 footer {
 	border-top: 4px solid var(--rule);
-	background: var(--accent);
-	color: var(--on-accent);
-	font-family: var(--display);
 	font-size: 1.5rem;
 	line-height: 3rem;
 	text-align: right;
 }
 
+header div,
 footer div {
-	padding-right: 4rem;
+	width: 100%;
+	max-width: var(--page);
+	margin: 0 auto;
+	padding: 0 var(--gutter);
+}
+
+header div {
+	display: flex;
+	/* flex-end is the fallback where "last baseline" is not understood */
+	align-items: flex-end;
+	align-items: last baseline;
+	gap: 1rem;
+	padding-top: .5rem;
+	padding-bottom: .5rem;
+}
+
+.wordmark {
+	font-size: 2.5rem;
+	font-weight: 700;
+	line-height: 1;
+}
+
+/* the tree knut throws through the window */
+
+pre.tree {
+	color: inherit;
+	font-family: var(--mono);
+	font-size: .5rem;
+	line-height: 1.1;
+	white-space: pre;
 }
 
 /* listings: directories on disk and folders inside a zip */
@@ -191,6 +194,12 @@ table.listing {
 .listing .dir .name a {
 	color: var(--dir);
 	font-weight: 700;
+}
+
+.summary {
+	margin-top: 1rem;
+	padding-top: .35rem;
+	border-top: 4px solid var(--rule);
 }
 
 /* index of the published mappings */
@@ -264,9 +273,5 @@ input[type="submit"]:hover {
 @media (max-width: 38rem) {
 	.listing .date {
 		display: none;
-	}
-
-	footer div {
-		padding-right: 1.25rem;
 	}
 }

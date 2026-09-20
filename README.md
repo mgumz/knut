@@ -15,7 +15,7 @@ or any other voodoo.
 And sometimes it's quite handy to just tell someone to POST stuff to a
 httpd-resource.
 
-![knut Screenshot](./media/knut.png)
+![a directory listing rendered by knut](./media/knut-directory-listing.png)
 
 
 ## Usage
@@ -87,6 +87,32 @@ Mapping Format:
     	print version
 ```
 
+## Directory Listings
+
+A published folder is rendered as a table. Click a column header to sort by
+it, click the same one again to turn the order around. The header of the
+page carries a QR code of the URI on screen, to point a phone at.
+
+The box above the table narrows the listing while you type. It runs in the
+browser and asks the server nothing, so it needs no flag:
+
+![the same listing, narrowed to the three names carrying "go"](./media/knut-directory-listing-filter.png)
+
+* terms are separated by spaces and all of them have to match: `go mod`
+* `-term` excludes: `log -old` is every name carrying `log`, minus the ones
+  carrying `old`
+* matching ignores case and looks at the name alone
+* `/` jumps into the box, `Escape` empties it
+* a typo still finds the file: where nothing matches exactly, the search is
+  repeated with one mistyped letter allowed per term
+* the count on the right says how many of the entries are left, and `../`
+  is never filtered away
+* the query survives a click on a column header, so a listing can be
+  narrowed and re-sorted in either order
+
+Without JavaScript the box does not appear and the table is plain HTML,
+like the rest of the page.
+
 ## Live Views
 
 `-live` makes the rendered pages move:
@@ -102,11 +128,10 @@ Mapping Format:
   measures the upload, so it stands at 100% while the last of it is still
   being written - the note next to it says so.
 
-This is the one flag which puts javascript on the page: it serves a
-vendored [htmx](https://htmx.org) (0BSD, ~51 kb, gzipped into the binary)
-at the reserved uri `/.knut/htmx.js`. Without the flag *knut* renders
-exactly the html it always did - no script tag, no reserved uri, still
-usable with `curl`, `wget` or `lynx`.
+With `-live` *knut* watches the folders it lists, for as long as a listing
+is on screen. And it answers `/.knut/htmx.js` itself - that is where it
+serves [htmx](https://htmx.org) - so a file of that name cannot be served
+from a published tree. *knut* warns at startup if a mapping claims it.
 
 Live listings lean on the filesystem reporting its own changes (inotify,
 kqueue, `ReadDirectoryChangesW`). A tree served off a network mount - NFS,

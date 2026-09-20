@@ -2,12 +2,13 @@
 ## -- build environment
 ##
 
-FROM    golang:1.26-alpine AS build-env
+FROM    golang:1.27-alpine3.24 AS build-env
 
 ARG     VERSION=dev
 
 WORKDIR /src
-RUN     apk add -U --no-cache git
+RUN     apk upgrade --no-cache && \
+        apk add -U --no-cache git
 
 # cache deps first
 COPY    go.mod go.sum ./
@@ -24,11 +25,12 @@ RUN     CGO_ENABLED=0 go build -trimpath \
 ## -- runtime environment
 ##
 
-FROM    alpine:3.23.4 AS rt-env
+FROM    alpine:3.24 AS rt-env
 
 # git + cgit power the git:// and cgit:// handlers (git http-backend / cgit
 # are invoked as CGI subprocesses).
-RUN     apk add -U --no-cache git cgit tini
+RUN     apk upgrade --no-cache && \
+        apk add --no-cache git cgit tini-static
 
 COPY    --from=build-env /src/bin/knut /knut
 

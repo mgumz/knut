@@ -3,7 +3,11 @@
 
 package handler
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/mgumz/knut/internal/pkg/knut/view"
+)
 
 // basicAuthHandler checks the submited username and password against predefined
 // values.
@@ -14,7 +18,7 @@ func BasicAuthHandler(next http.Handler, username, password string) http.Handler
 		if ok && rUser == username && password == rPassword {
 			next.ServeHTTP(w, r)
 		} else {
-			writeStatus(w, http.StatusUnauthorized)
+			view.Status(w, http.StatusUnauthorized)
 		}
 	})
 }

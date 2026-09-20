@@ -16,6 +16,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/mgumz/knut/internal/pkg/knut/view"
 )
 
 // zipReread is how long a live listing trusts the stat of the zip it shows
@@ -129,7 +131,7 @@ func ZipFSHandler(name, prefix, index string) http.Handler {
 			break
 		}
 
-		writeStatus(w, http.StatusNotFound)
+		view.Status(w, http.StatusNotFound)
 	})
 }
 
@@ -180,7 +182,7 @@ func serveZipEntry(w http.ResponseWriter, zFile *zip.File) {
 // replaced by writing a new one next to it and moving it over, and the
 // file the watch was put on is the one which just got unlinked.
 func indexFolderEntries(w http.ResponseWriter, r *http.Request, fsys fs.FS, name, reported, folder string) {
-	if err := serveListing(w, r, filepath.Dir(reported), zipFolderReader(fsys, name, folder), folder != ""); err != nil {
+	if err := view.Listing(w, r, filepath.Dir(reported), zipFolderReader(fsys, name, folder), folder != ""); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(os.Stderr, "error: %q: %v\n", reported, err)
 	}
@@ -212,17 +214,17 @@ func indexFolderEntries(w http.ResponseWriter, r *http.Request, fsys fs.FS, name
 // zipReread the zip is opened whatever the stat claims. that bounds how
 // stale a listing can get on any filesystem, without parsing the central
 // directory twice a second for a zip nobody touches.
-func zipFolderReader(fsys fs.FS, name, folder string) readListing {
+func zipFolderReader(fsys fs.FS, name, folder string) view.ReadListing {
 
 	var (
 		size    int64
 		mod     time.Time
 		last    time.Time
-		entries []listEntry
+		entries []view.ListEntry
 		state   string
 	)
 
-	return func() ([]listEntry, string, error) {
+	return func() ([]view.ListEntry, string, error) {
 
 		fi, err := fs.Stat(fsys, name)
 		if err != nil {
@@ -245,7 +247,7 @@ func zipFolderReader(fsys fs.FS, name, folder string) readListing {
 		// difference and reads again. one tick late beats missing it.
 		size, mod, last = fi.Size(), fi.ModTime(), time.Now()
 		entries = listFolderEntries(z, folder)
-		state = liveState(entries)
+		state = view.LiveState(entries)
 
 		return entries, state, nil
 	}
@@ -254,9 +256,9 @@ func zipFolderReader(fsys fs.FS, name, folder string) readListing {
 // listFolderEntries collects the direct children of "folder". zips do not
 // have to carry entries for their folders, so the folders in between are
 // picked up from the names of the entries below them.
-func listFolderEntries(zreader *zip.Reader, folder string) []listEntry {
+func listFolderEntries(zreader *zip.Reader, folder string) []view.ListEntry {
 
-	entries, seen := make([]listEntry, 0), map[string]bool{}
+	entries, seen := make([]view.ListEntry, 0), map[string]bool{}
 	for _, file := range zreader.File {
 
 		// skip entries not children of 'folder'
@@ -287,9 +289,9 @@ func listFolderEntries(zreader *zip.Reader, folder string) []listEntry {
 		}
 		seen[name] = true
 
-		entry := newListEntry(name, size, mod, isDir)
+		entry := view.NewListEntry(name, size, mod, isDir)
 		if !isDir {
-			entry.sig = sig
+			entry.Sig = sig
 		}
 		entries = append(entries, entry)
 	}

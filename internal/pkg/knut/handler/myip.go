@@ -12,10 +12,12 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/mgumz/knut/internal/pkg/knut/view"
 )
 
 type myIP struct {
-	page
+	view.Page
 	IP   string
 	Port string
 	ASN  string
@@ -87,13 +89,13 @@ func MyIPHandler(infoAPI string, fuzzy bool) http.Handler {
 		fuzzyIP = func(mi *myIP) *myIP { mi.IP = fuzzyMyIP(mi.IP); return mi }
 	}
 
-	tmpl := newPageTemplate("myip")
+	tmpl := view.Template("myip")
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ip, port, _ := net.SplitHostPort(r.RemoteAddr)
-		myip := &myIP{page: newPage("myip"), IP: ip, Port: port}
+		myip := &myIP{Page: view.NewPage("myip"), IP: ip, Port: port}
 		myip = retrieveASN(myip)
 		myip = fuzzyIP(myip)
-		writePage(w, tmpl, myip)
+		view.Write(w, tmpl, myip)
 	})
 }

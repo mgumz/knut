@@ -1,7 +1,12 @@
 // Copyright 2026 Mathias Gumz. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-package handler
+// Package fswatch reports that a folder on disk changed.
+//
+// it knows nothing about what lives in that folder or about what a caller
+// makes of the news - it says "look again", and the caller is the one who
+// decides whether anything it cares about moved.
+package fswatch
 
 import (
 	"path/filepath"
@@ -10,7 +15,8 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-// folders is the one watcher knut runs, however many clients are looking.
+// folders is the one watcher this package runs, however many callers are
+// looking.
 //
 // a watcher costs a kernel object - linux hands out 128 inotify instances
 // per user by default - and a folder watched twice is watched twice. so
@@ -24,13 +30,13 @@ type folderWatch struct {
 	subs map[string]map[chan struct{}]bool
 }
 
-// watchFolder reports changes in "dir" on the returned channel until the
+// Folder reports changes in "dir" on the returned channel until the
 // returned func is called.
 //
 // the channel carries no event: it says "look again", and the caller is
 // the one who knows what a change means. it is buffered by one and never
 // blocks the pump - two wakeups nobody picked up are one wakeup.
-func watchFolder(dir string) (<-chan struct{}, func(), error) {
+func Folder(dir string) (<-chan struct{}, func(), error) {
 	return folders.subscribe(dir)
 }
 

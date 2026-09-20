@@ -1,7 +1,7 @@
 // Copyright 2025 Mathias Gumz. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-package handler
+package view
 
 import (
 	"cmp"
@@ -41,41 +41,38 @@ var entryTypeNames = [...]string{entryDir: "dir", entryFile: "file"}
 
 func (t entryType) String() string { return entryTypeNames[t] }
 
-// listEntry is one row of a rendered folder, either a file on disk or an
+// ListEntry is one row of a rendered folder, either a file on disk or an
 // entry inside a zip.
-type listEntry struct {
+type ListEntry struct {
 	Name string // display name, folders carry a trailing "/"
 	URL  string // href, relative to the folder being listed
 	Type entryType
-	Size string // humanized, "-" for folders
 	Date string // modification time, local
 	ISO  string // the same time, machine readable
 
-	bytes int64
+	Bytes int64 // size of a file, 0 for a folder - the markup humanizes it
 	mod   time.Time
-	sig   uint64 // content fingerprint, 0 when there is none to be had
+	Sig   uint64 // content fingerprint, 0 when there is none to be had
 }
 
 // Dir marks the rows a listing renders as folders.
-func (e listEntry) Dir() bool { return e.Type == entryDir }
+func (e ListEntry) Dir() bool { return e.Type == entryDir }
 
-// newListEntry builds the row for "name". "name" is the plain entry name
+// NewListEntry builds the row for "name". "name" is the plain entry name
 // without any path, the link is kept relative so it resolves below
 // whatever uri the folder is published at.
-func newListEntry(name string, size int64, mod time.Time, isDir bool) listEntry {
-	entry := listEntry{
+func NewListEntry(name string, size int64, mod time.Time, isDir bool) ListEntry {
+	entry := ListEntry{
 		Name:  name,
 		URL:   (&url.URL{Path: name}).String(),
 		Type:  entryFile,
-		Size:  humanSize(size),
-		bytes: size,
+		Bytes: size,
 		mod:   mod,
 	}
 
 	if isDir {
 		entry.Name, entry.URL = name+"/", entry.URL+"/"
-		entry.Type, entry.Size = entryDir, "-"
-		entry.bytes = 0
+		entry.Type, entry.Bytes = entryDir, 0
 	}
 
 	if !mod.IsZero() {
@@ -111,20 +108,20 @@ func listSortFromQuery(query url.Values) listSort {
 
 // apply orders "entries" in place. only the type sorts folders apart, by
 // size or date the newest or biggest entry wins, folder or not.
-func (sort listSort) apply(entries []listEntry) {
+func (sort listSort) apply(entries []ListEntry) {
 
-	compare := func(a, b listEntry) int { return strings.Compare(a.Name, b.Name) }
+	compare := func(a, b ListEntry) int { return strings.Compare(a.Name, b.Name) }
 	switch sort.Key {
 	case sortKeyType:
 		// folders first, then the files
-		compare = func(a, b listEntry) int { return cmp.Compare(a.Type, b.Type) }
+		compare = func(a, b ListEntry) int { return cmp.Compare(a.Type, b.Type) }
 	case sortKeySize:
-		compare = func(a, b listEntry) int { return cmp.Compare(a.bytes, b.bytes) }
+		compare = func(a, b ListEntry) int { return cmp.Compare(a.Bytes, b.Bytes) }
 	case sortKeyDate:
-		compare = func(a, b listEntry) int { return a.mod.Compare(b.mod) }
+		compare = func(a, b ListEntry) int { return a.mod.Compare(b.mod) }
 	}
 
-	slices.SortStableFunc(entries, func(a, b listEntry) int {
+	slices.SortStableFunc(entries, func(a, b ListEntry) int {
 		order := compare(a, b)
 		if sort.Order == orderDesc {
 			order = -order
@@ -169,9 +166,9 @@ func (sort listSort) columns() []listColumn {
 
 // listing is the page behind a rendered folder.
 type listing struct {
-	page
+	Page
 	Columns []listColumn
-	Entries []listEntry
+	Entries []ListEntry
 	Parent  string // link to the enclosing folder, empty at the top
 	Summary string
 	Watch   string // url a live listing polls, empty when it does not
@@ -184,16 +181,18 @@ type listing struct {
 // the url is spelled out instead of left empty: an empty "hx-get" is no
 // url to htmx, and the sort has to survive the refresh.
 func (l *listing) watch(sort listSort, state string) {
-	l.Watch = "?sort=" + sort.Key + "&order=" + sort.Order + "&" + liveParam + "=" + state
+	l.Watch = "?sort=" + sort.Key +
+		"&order=" + sort.Order +
+		"&" + liveParam + "=" + state
 }
 
 // newListing sorts "entries" and frames them as a page titled by "folder".
-func newListing(folder string, entries []listEntry, sort listSort, parent bool) listing {
+func newListing(folder string, entries []ListEntry, sort listSort, parent bool) listing {
 
 	sort.apply(entries)
 
 	list := listing{
-		page:    newPage(folder),
+		Page:    NewPage(folder),
 		Columns: sort.columns(),
 		Entries: entries,
 		Summary: summarize(entries),
@@ -205,7 +204,7 @@ func newListing(folder string, entries []listEntry, sort listSort, parent bool) 
 	return list
 }
 
-// serveListing answers "r" with the folder "read" lists. it is the whole
+// Listing answers "r" with the folder "read" lists. it is the whole
 // response path of a listing, shared by the folders on disk and the ones
 // inside a zip - what those two do differently is the read, not what
 // becomes of it.
@@ -218,7 +217,7 @@ func newListing(folder string, entries []listEntry, sort listSort, parent bool) 
 //
 // a failed read is handed back instead of answered: what a folder which
 // cannot be read means is the caller's to say.
-func serveListing(w http.ResponseWriter, r *http.Request, dir string, read readListing, parent bool) error {
+func Listing(w http.ResponseWriter, r *http.Request, dir string, read ReadListing, parent bool) error {
 
 	entries, state, err := read()
 	if err != nil {
@@ -235,18 +234,18 @@ func serveListing(w http.ResponseWriter, r *http.Request, dir string, read readL
 	}
 
 	sort := listSortFromQuery(r.URL.Query())
-	list := newListing(requestPath(r), entries, sort, parent)
+	list := newListing(RequestPath(r), entries, sort, parent)
 	if watchable {
 		list.watch(sort, state)
 	}
 
-	writePageFor(w, r, listingTmpl, list)
+	WriteFor(w, r, listingTmpl, list)
 
 	return nil
 }
 
 // summarize counts what is in the folder, "du"-style.
-func summarize(entries []listEntry) string {
+func summarize(entries []ListEntry) string {
 
 	dirs, bytes := 0, int64(0)
 	for i := range entries {
@@ -254,7 +253,7 @@ func summarize(entries []listEntry) string {
 			dirs++
 			continue
 		}
-		bytes += entries[i].bytes
+		bytes += entries[i].Bytes
 	}
 
 	files := len(entries) - dirs
@@ -277,4 +276,4 @@ func plural(n int, noun string) string {
 // the whole listing sits in one block, table or bare tree: a live listing
 // swaps that block for the one the server just rendered, and a folder
 // which fell empty (or filled up) swaps along with everything else.
-var listingTmpl = newPageTemplate("listing")
+var listingTmpl = Template("listing")

@@ -1,10 +1,10 @@
 // generated, do NOT edit.
 //
-//go:generate go run -v ./gen_htmx.go -version 2.0.10
+//go:generate go run -v ./vendor_htmx.go -version 2.0.10
 
-package handler
+package view
 
-// the vendored htmx release. see gen_htmx.go for how to update it.
+// the vendored htmx release. see vendor_htmx.go for how to update it.
 const (
 	htmxVersion = "2.0.10"
 

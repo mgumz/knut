@@ -3,7 +3,7 @@
 
 //go:build ignore
 
-// gen_htmx vendors htmx into the handler package: it fetches the already
+// vendor_htmx vendors htmx into the view package: it fetches the already
 // minified release from a cdn, gzips it and drops the result next to
 // knut.css. no minifier of our own - the distributed "htmx.min.js" is what
 // upstream ships and what every other consumer of htmx runs.
@@ -16,7 +16,7 @@
 // the pinned release is re-fetched with "go generate ./..." - the version
 // to pin is what "-version" was last run with:
 //
-//	go run ./gen_htmx.go -version 2.0.10
+//	go run ./vendor_htmx.go -version 2.0.10
 package main
 
 import (
@@ -46,7 +46,7 @@ func main() {
 	version := flag.String("version", "2.0.10", "version of htmx to vendor")
 	asset := flag.String("o", "assets/htmx.min.js.gz", "where to write the compressed asset")
 	license := flag.String("license", "assets/htmx.LICENSE", "where to write the license")
-	gofile := flag.String("go", "htmx_gen.go", "where to write the generated go file")
+	gofile := flag.String("go", "htmx_pinned.go", "where to write the generated go file")
 	flag.Parse()
 
 	js, err := fetch(fmt.Sprintf(cdnURL, *version))
@@ -145,17 +145,17 @@ func compress(data []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// genGo renders what the handler package needs to know about the asset it
+// genGo renders what the view package needs to know about the asset it
 // embeds: which release it is and what it weighs.
 func genGo(version, sha string, raw, gz int) []byte {
 
 	const tmpl = `// generated, do NOT edit.
 //
-//go:generate go run -v ./gen_htmx.go -version @version@
+//go:generate go run -v ./vendor_htmx.go -version @version@
 
-package handler
+package view
 
-// the vendored htmx release. see gen_htmx.go for how to update it.
+// the vendored htmx release. see vendor_htmx.go for how to update it.
 const (
 	htmxVersion = "@version@"
 

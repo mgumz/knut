@@ -13,6 +13,8 @@ import (
 	"testing"
 	"testing/fstest"
 	"time"
+
+	"github.com/mgumz/knut/internal/pkg/knut/view"
 )
 
 // zipItem is one entry of a zip written for a test.
@@ -231,7 +233,7 @@ func TestZipFSStateSeesReplacedContent(t *testing.T) {
 			t.Fatalf("reading the zip: %v", err)
 		}
 
-		states[i] = liveState(listFolderEntries(z, ""))
+		states[i] = view.LiveState(listFolderEntries(z, ""))
 	}
 
 	if states[0] == states[1] {

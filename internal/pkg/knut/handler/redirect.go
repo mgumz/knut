@@ -6,9 +6,11 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/mgumz/knut/internal/pkg/knut/view"
 )
 
-var redirectTmpl = newPageTemplate("redirect")
+var redirectTmpl = view.Template("redirect")
 
 func RedirectHandler(path, location string) http.Handler {
 
@@ -41,9 +43,10 @@ func RedirectHandler(path, location string) http.Handler {
 		}
 
 		w.Header().Set("Location", target)
-		writePageStatus(w, http.StatusMovedPermanently, redirectTmpl, struct {
-			page
+		view.WriteStatus(w, http.StatusMovedPermanently, redirectTmpl, struct {
+			view.Page
 			Location string
-		}{page: newPage(""), Location: target})
+		}{Page: view.NewPage(""), Location: target})
+
 	})
 }

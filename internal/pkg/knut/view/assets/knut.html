@@ -73,7 +73,7 @@ fell empty (or filled up) swaps along with everything else.
     <tr{{ if .Dir }} class="dir"{{ end }}>
       <td class="name"><a href="{{ .URL }}">{{ .Name }}</a></td>
       <td class="type">{{ .Type }}</td>
-      <td class="size">{{ .Size }}</td>
+      <td class="size">{{ if .Dir }}-{{ else }}{{ .Bytes | humansize }}{{ end }}</td>
       <td class="date"><time datetime="{{ .ISO }}">{{ .Date }}</time></td>
     </tr>
 {{- end }}
@@ -129,7 +129,7 @@ that is what the note next to it says.
 
 {{/* upload-done: .Size, .Duration */}}
 {{ define "upload-done" -}}
-<p>ok, received {{ .Size }} in {{ .Duration }}</p>
+<p>ok, received {{ .Size | humansize }} in {{ .Duration }}</p>
 <p class="meta"><a href="">upload another file</a></p>
 {{ end }}
 

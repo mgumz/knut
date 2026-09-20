@@ -1,14 +1,15 @@
 // Copyright 2025 Mathias Gumz. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-package handler
+package view
 
 import (
 	"bytes"
-	_ "embed"
 	"html/template"
 	"net/http"
 	"strconv"
+
+	_ "embed"
 
 	"github.com/mgumz/knut/internal/pkg/knut"
 )
@@ -38,12 +39,17 @@ var knutHTML string
 
 // pages is knutHTML parsed, once. a page template is this set cloned with
 // "content" pointed at one of its blocks, see newPageTemplate.
-var pages = template.Must(template.New("knut").Parse(knutHTML))
+var pages = template.Must(template.New("knut").Funcs(funcs).Parse(knutHTML))
 
-// page carries what the "layout" block needs. page specific data embeds
+// funcs is what the markup can call. formatting a byte count is a
+// presentation decision, so the block which shows one makes it - the go
+// side hands over the number.
+var funcs = template.FuncMap{"humansize": humanSize}
+
+// Page carries what the "layout" block needs. Page specific data embeds
 // it, so a "content" template reaches both its own fields and the ones
 // below.
-type page struct {
+type Page struct {
 	Title   string
 	Heading string
 	Version string
@@ -53,13 +59,13 @@ type page struct {
 	LiveURI string // where the layout pulls htmx from
 }
 
-// newPage frames "heading" - an empty one renders the bare knut title.
-func newPage(heading string) page {
+// NewPage frames "heading" - an empty one renders the bare knut title.
+func NewPage(heading string) Page {
 	title := "knut"
 	if heading != "" {
 		title += " - " + heading
 	}
-	return page{
+	return Page{
 		Title:   title,
 		Heading: heading,
 		Version: knut.Version,
@@ -70,17 +76,17 @@ func newPage(heading string) page {
 	}
 }
 
-// newPageTemplate frames the block "name" of assets/knut.html in the
+// Template frames the block "name" of assets/knut.html in the
 // shared knut layout.
 //
 // the block is reached through a "content" of its own rather than by
 // renaming it: the layout asks for "content", and so does writePageFor
 // when htmx wants the block alone.
-func newPageTemplate(name string) *template.Template {
+func Template(name string) *template.Template {
 
 	tmpl := template.Must(pages.Clone())
 	if tmpl.Lookup(name) == nil {
-		panic("handler: no template " + name + " in assets/knut.html")
+		panic("view: no template " + name + " in assets/knut.html")
 	}
 
 	template.Must(tmpl.New(contentTmpl).Parse(`{{ template "` + name + `" . }}`))
@@ -88,9 +94,9 @@ func newPageTemplate(name string) *template.Template {
 	return tmpl.Lookup(layoutTmpl)
 }
 
-// renderPage renders "data" into a buffer. rendering upfront keeps a
+// Render renders "data" into a buffer. rendering upfront keeps a
 // template error from ending up as a half written response.
-func renderPage(tmpl *template.Template, data any) ([]byte, error) {
+func Render(tmpl *template.Template, data any) ([]byte, error) {
 	buf := bytes.NewBuffer(nil)
 	if err := tmpl.Execute(buf, data); err != nil {
 		return nil, err
@@ -98,15 +104,21 @@ func renderPage(tmpl *template.Template, data any) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// writePage renders "data" and sends it as an html response.
-func writePage(w http.ResponseWriter, tmpl *template.Template, data any) {
-	writePageStatus(w, http.StatusOK, tmpl, data)
+// Write renders "data" and sends it as an html response.
+func Write(w http.ResponseWriter, tmpl *template.Template, data any) {
+	WriteStatus(w, http.StatusOK, tmpl, data)
 }
 
-// writePageFor answers "r" with "data": htmx replaces a piece of a page
+// isFragment reports whether "r" comes from htmx. those requests get the
+// content of a page alone - the layout around it is already on screen.
+func isFragment(r *http.Request) bool {
+	return liveEnabled() && r.Header.Get("HX-Request") == "true"
+}
+
+// WriteFor answers "r" with "data": htmx replaces a piece of a page
 // which is already on screen, so it gets the content template alone.
 // every other client - a browser navigating, curl, wget - gets the page.
-func writePageFor(w http.ResponseWriter, r *http.Request, tmpl *template.Template, data any) {
+func WriteFor(w http.ResponseWriter, r *http.Request, tmpl *template.Template, data any) {
 
 	if isFragment(r) {
 		if content := tmpl.Lookup(contentTmpl); content != nil {
@@ -114,14 +126,14 @@ func writePageFor(w http.ResponseWriter, r *http.Request, tmpl *template.Templat
 		}
 	}
 
-	writePage(w, tmpl, data)
+	Write(w, tmpl, data)
 }
 
-// writePageStatus renders "data" as an html response under "code".
-func writePageStatus(w http.ResponseWriter, code int, tmpl *template.Template, data any) {
-	body, err := renderPage(tmpl, data)
+// WriteStatus renders "data" as an html response under "code".
+func WriteStatus(w http.ResponseWriter, code int, tmpl *template.Template, data any) {
+	body, err := Render(tmpl, data)
 	if err != nil {
-		writeStatus(w, http.StatusInternalServerError)
+		Status(w, http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

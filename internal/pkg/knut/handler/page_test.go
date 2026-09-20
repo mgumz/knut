@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/mgumz/knut/internal/pkg/knut/view"
 )
 
 // the blocks of assets/knut.html, each with the data its handler renders
@@ -19,8 +21,6 @@ func pageTemplates() []struct {
 	data any
 	want []string
 } {
-	entries := []listEntry{newListEntry("a.txt", 12, modTime(15), false)}
-
 	return []struct {
 		name string
 		tmpl *template.Template
@@ -28,56 +28,51 @@ func pageTemplates() []struct {
 		want []string
 	}{
 		{
-			name: "listing",
-			tmpl: listingTmpl,
-			data: newListing("/", entries, listSort{Key: sortKeyName, Order: orderAsc}, true),
-			want: []string{`<table class="listing">`, "a.txt", "12 B", "2026-09-19 15:04", "1 file"},
-		}, {
 			name: "index",
 			tmpl: indexTmpl,
 			data: struct {
-				page
+				view.Page
 				Windows []string
-			}{page: newPage(""), Windows: []string{"/tree"}},
+			}{Page: view.NewPage(""), Windows: []string{"/tree"}},
 			want: []string{`<ul class="windows">`, `<a href="./tree">/tree</a>`},
 		}, {
 			name: "status",
-			tmpl: statusTmpl,
+			tmpl: view.Template("status"),
 			data: struct {
-				page
+				view.Page
 				Code int
 				Text string
-			}{page: newPage(""), Code: 404, Text: "Not Found"},
+			}{Page: view.NewPage(""), Code: 404, Text: "Not Found"},
 			want: []string{`<span class="code">404</span>`, "Not Found"},
 		}, {
 			name: "upload",
 			tmpl: uploadTmpl,
 			data: struct {
-				page
+				view.Page
 				Action string
-			}{page: newPage("file upload"), Action: "/upload"},
+			}{Page: view.NewPage("file upload"), Action: "/upload"},
 			want: []string{`<div id="upload">`, `type="file"`, `name="upload_file"`},
 		}, {
 			name: "upload-done",
 			tmpl: uploadDoneTmpl,
 			data: struct {
-				page
-				Size     string
+				view.Page
+				Size     int64
 				Duration time.Duration
-			}{page: newPage("file upload"), Size: "4 B", Duration: time.Second},
+			}{Page: view.NewPage("file upload"), Size: 4, Duration: time.Second},
 			want: []string{"ok, received 4 B in 1s", "upload another file"},
 		}, {
 			name: "redirect",
 			tmpl: redirectTmpl,
 			data: struct {
-				page
+				view.Page
 				Location string
-			}{page: newPage(""), Location: "/elsewhere"},
+			}{Page: view.NewPage(""), Location: "/elsewhere"},
 			want: []string{`<a href="/elsewhere">/elsewhere</a>`},
 		}, {
 			name: "myip",
-			tmpl: newPageTemplate("myip"),
-			data: &myIP{page: newPage("myip"), IP: "127.0.0.1", Port: "8080", ASN: "AS1"},
+			tmpl: view.Template("myip"),
+			data: &myIP{Page: view.NewPage("myip"), IP: "127.0.0.1", Port: "8080", ASN: "AS1"},
 			want: []string{`<span id="ip">127.0.0.1</span>`, `<span id="port">8080</span>`, `<span id="asn">AS1</span>`},
 		},
 	}
@@ -89,7 +84,7 @@ func TestPageTemplatesRender(t *testing.T) {
 	for _, page := range pageTemplates() {
 		t.Run(page.name, func(t *testing.T) {
 
-			body, err := renderPage(page.tmpl, page.data)
+			body, err := view.Render(page.tmpl, page.data)
 			if err != nil {
 				t.Fatalf("rendering %q: %v", page.name, err)
 			}
@@ -119,12 +114,12 @@ func TestPageTemplatesRenderAsFragment(t *testing.T) {
 	for _, page := range pageTemplates() {
 		t.Run(page.name, func(t *testing.T) {
 
-			content := page.tmpl.Lookup(contentTmpl)
+			content := page.tmpl.Lookup("content")
 			if content == nil {
-				t.Fatalf("the %q page has no %q template", page.name, contentTmpl)
+				t.Fatalf("the %q page has no %q template", page.name, "content")
 			}
 
-			body, err := renderPage(content, page.data)
+			body, err := view.Render(content, page.data)
 			if err != nil {
 				t.Fatalf("rendering the %q fragment: %v", page.name, err)
 			}
@@ -152,5 +147,5 @@ func TestNewPageTemplateRejectsUnknownBlock(t *testing.T) {
 		}
 	}()
 
-	newPageTemplate("no-such-block")
+	view.Template("no-such-block")
 }

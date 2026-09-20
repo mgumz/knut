@@ -7,10 +7,11 @@ import (
 	"errors"
 	"io/fs"
 	"net/http"
-	"net/url"
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/mgumz/knut/internal/pkg/knut/view"
 )
 
 // indexPage shadows a generated listing, just like in http.FileServer.
@@ -35,7 +36,7 @@ func DirListHandler(fsys http.FileSystem) http.Handler {
 
 		dir, err := fsys.Open(name)
 		if err != nil {
-			writeStatus(w, statusForError(err))
+			view.Status(w, statusForError(err))
 			return
 		}
 		defer dir.Close()
@@ -59,11 +60,11 @@ func DirListHandler(fsys http.FileSystem) http.Handler {
 			return
 		}
 
-		read := func() ([]listEntry, string, error) { return readDir(fsys, name) }
+		read := func() ([]view.ListEntry, string, error) { return readDir(fsys, name) }
 
 		// the folder may be gone by now - it was opened above, not held
-		if err := serveListing(w, r, watchDir(fsys, name), read, name != "/"); err != nil {
-			writeStatus(w, statusForError(err))
+		if err := view.Listing(w, r, watchDir(fsys, name), read, name != "/"); err != nil {
+			view.Status(w, statusForError(err))
 		}
 	})
 }
@@ -87,7 +88,7 @@ func watchDir(fsys http.FileSystem, name string) string {
 // readDir lists the folder "name" below "fsys" as the rows of a listing,
 // together with the fingerprint of what it saw. a live listing reads the
 // same folder over and over, so this is one call, not an open handle.
-func readDir(fsys http.FileSystem, name string) ([]listEntry, string, error) {
+func readDir(fsys http.FileSystem, name string) ([]view.ListEntry, string, error) {
 
 	dir, err := fsys.Open(name)
 	if err != nil {
@@ -100,13 +101,13 @@ func readDir(fsys http.FileSystem, name string) ([]listEntry, string, error) {
 		return nil, "", err
 	}
 
-	entries := make([]listEntry, 0, len(infos))
+	entries := make([]view.ListEntry, 0, len(infos))
 	for _, fi := range infos {
 		entries = append(entries,
-			newListEntry(fi.Name(), fi.Size(), fi.ModTime(), fi.IsDir()))
+			view.NewListEntry(fi.Name(), fi.Size(), fi.ModTime(), fi.IsDir()))
 	}
 
-	return entries, liveState(entries), nil
+	return entries, view.LiveState(entries), nil
 }
 
 // statusForError makes of an open error what http.FileServer would make
@@ -129,22 +130,4 @@ func localRedirect(w http.ResponseWriter, r *http.Request, to string) {
 	}
 	w.Header().Set("Location", to)
 	w.WriteHeader(http.StatusMovedPermanently)
-}
-
-// requestPath returns the path as the client asked for it: by the time a
-// listing is rendered, r.URL.Path has lost the prefix of its mapping.
-func requestPath(r *http.Request) string {
-
-	uri := r.RequestURI
-	if uri == "" {
-		return r.URL.Path
-	}
-	if i := strings.IndexByte(uri, '?'); i > -1 {
-		uri = uri[:i]
-	}
-	if unescaped, err := url.PathUnescape(uri); err == nil {
-		return unescaped
-	}
-
-	return uri
 }

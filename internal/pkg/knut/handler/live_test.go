@@ -14,23 +14,24 @@ import (
 	"time"
 
 	"github.com/mgumz/knut/internal/pkg/knut"
+	"github.com/mgumz/knut/internal/pkg/knut/view"
 )
 
 // live mode is a process wide switch, so a test turning it on turns it off
 // again - otherwise the next test renders pages it never asked for.
 func liveMode(t *testing.T) {
 	t.Helper()
-	SetLive(true)
-	t.Cleanup(func() { SetLive(false) })
+	view.SetLive(true)
+	t.Cleanup(func() { view.SetLive(false) })
 }
 
 // livePace shortens the long poll: the tests wait for the same loop the
 // server runs, just not for half a minute.
 func livePace(t *testing.T, timeout time.Duration) {
 	t.Helper()
-	old := liveTimeout
-	liveTimeout = timeout
-	t.Cleanup(func() { liveTimeout = old })
+	old := view.LiveTimeout
+	view.LiveTimeout = timeout
+	t.Cleanup(func() { view.LiveTimeout = old })
 }
 
 // getHX asks the way htmx does: it announces itself and gets a fragment.
@@ -295,28 +296,6 @@ func TestLiveZipWatchHoldsUntilReplaced(t *testing.T) {
 	}
 }
 
-// in which order a filesystem hands a folder over is not a change
-func TestLiveStateIgnoresOrder(t *testing.T) {
-
-	mod := modTime(12)
-	entries := []listEntry{
-		newListEntry("a.txt", 1, mod, false),
-		newListEntry("b.txt", 2, mod, false),
-		newListEntry("sub", 0, mod, true),
-	}
-	shuffled := []listEntry{entries[2], entries[0], entries[1]}
-
-	if liveState(entries) != liveState(shuffled) {
-		t.Error("the same folder in another order is reported as changed")
-	}
-	if liveState(entries) == liveState(entries[:2]) {
-		t.Error("a folder missing an entry is reported as unchanged")
-	}
-	if liveState(entries[:1]) == liveState([]listEntry{newListEntry("a.txt", 2, mod, false)}) {
-		t.Error("an entry which grew is reported as unchanged")
-	}
-}
-
 // the upload form posts through htmx and reports progress
 func TestLiveUploadForm(t *testing.T) {
 
@@ -337,88 +316,38 @@ func TestLiveUploadForm(t *testing.T) {
 	}
 }
 
-func TestLiveAsset(t *testing.T) {
+// an in-memory tree has no path to hand a watcher. it is listed like any
+// other, it just never asks the client to come back for an answer which
+// could not arrive.
+func TestLiveListingWithoutAPathIsNotArmed(t *testing.T) {
 
 	liveMode(t)
 
-	passed := false
-	handler := LiveAssetHandler(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
-		passed = true
-	}))
+	body := get(DirListHandler(testFS()), "/").Body.String()
 
-	// anything but the reserved uri belongs to the handler below
-	get(handler, "/somewhere/else")
-	if !passed {
-		t.Error("a request for another uri did not reach the next handler")
+	if strings.Contains(body, "hx-get") {
+		t.Error("a listing which cannot be watched armed a poll")
 	}
-
-	// a client taking gzip gets the asset as it is embedded
-	rec := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, knut.LiveAssetURI, nil)
-	req.Header.Set("Accept-Encoding", "gzip, deflate, br")
-	handler.ServeHTTP(rec, req)
-
-	if got, want := rec.Header().Get("Content-Encoding"), "gzip"; got != want {
-		t.Errorf("got content-encoding %q, want %q", got, want)
-	}
-	if got, want := rec.Body.Len(), htmxSizeGz; got != want {
-		t.Errorf("got %d bytes, want the %d embedded ones", got, want)
-	}
-	if got, want := rec.Header().Get("Content-Type"), "text/javascript"; !strings.HasPrefix(got, want) {
-		t.Errorf("got content-type %q, want %q", got, want)
-	}
-
-	// a client which does not gets the javascript itself
-	rec = get(handler, knut.LiveAssetURI)
-	if rec.Header().Get("Content-Encoding") != "" {
-		t.Error("the asset was sent compressed to a client not asking for it")
-	}
-	if got, want := rec.Body.Len(), htmxSizeRaw; got != want {
-		t.Errorf("got %d bytes, want the %d of htmx %s", got, want, htmxVersion)
-	}
-	if body := rec.Body.String(); !strings.Contains(body, "htmx") {
-		t.Error("the unpacked asset is not htmx")
+	if !strings.Contains(body, "a.txt") {
+		t.Error("the listing did not render its entries")
 	}
 }
 
-// the asset only changes with the binary, a browser may keep it
-func TestLiveAssetCaching(t *testing.T) {
+// the same listing, asked as a poll: answered, not held
+func TestLivePollWithoutAPathIsNotHeld(t *testing.T) {
 
 	liveMode(t)
+	livePace(t, time.Minute)
 
-	handler := LiveAssetHandler(http.NotFoundHandler())
+	done := make(chan int, 1)
+	go func() { done <- get(DirListHandler(testFS()), "/?live=whatever").Code }()
 
-	rec := get(handler, knut.LiveAssetURI)
-	etag := rec.Header().Get("Etag")
-	if etag == "" {
-		t.Fatal("the asset carries no etag")
-	}
-	if got := rec.Header().Get("Cache-Control"); !strings.Contains(got, "max-age=") {
-		t.Errorf("got cache-control %q, want a lifetime", got)
-	}
-
-	again := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, knut.LiveAssetURI, nil)
-	req.Header.Set("If-None-Match", etag)
-	handler.ServeHTTP(again, req)
-
-	if got, want := again.Code, http.StatusNotModified; got != want {
-		t.Errorf("got status %d, want %d", got, want)
-	}
-	if again.Body.Len() != 0 {
-		t.Error("a 304 must not carry the asset")
-	}
-}
-
-func TestLiveAssetMethod(t *testing.T) {
-
-	liveMode(t)
-
-	rec := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodPost, knut.LiveAssetURI, nil)
-	LiveAssetHandler(http.NotFoundHandler()).ServeHTTP(rec, req)
-
-	if got, want := rec.Code, http.StatusMethodNotAllowed; got != want {
-		t.Errorf("got status %d, want %d", got, want)
+	select {
+	case code := <-done:
+		if code != 200 {
+			t.Errorf("got status %d, want 200", code)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("a poll for an unwatchable tree was held")
 	}
 }

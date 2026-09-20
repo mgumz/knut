@@ -17,6 +17,7 @@ import (
 	"github.com/mgumz/knut/internal/pkg/knut"
 	"github.com/mgumz/knut/internal/pkg/knut/handler"
 	"github.com/mgumz/knut/internal/pkg/knut/ui"
+	"github.com/mgumz/knut/internal/pkg/knut/view"
 )
 
 func main() {
@@ -39,7 +40,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	handler.SetLive(opts.DoLive)
+	view.SetLive(opts.DoLive)
 
 	tree, windows := prepareTrees(http.NewServeMux(), flag.Args())
 	if len(windows) == 0 {
@@ -140,7 +141,7 @@ func buildHandlerChain(tree http.Handler, opts *knut.Opts) http.Handler {
 		// above the compressor: the htmx asset is embedded gzipped and
 		// goes out that way. it brings its own caching headers too, the
 		// one resource knut serves which is worth caching.
-		h = handler.LiveAssetHandler(h)
+		h = view.AssetHandler(h)
 	}
 	if opts.DoAuth != "" {
 		parts := strings.SplitN(opts.DoAuth, ":", 2)

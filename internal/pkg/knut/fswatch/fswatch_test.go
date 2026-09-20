@@ -1,13 +1,11 @@
 // Copyright 2026 Mathias Gumz. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-package handler
+package fswatch
 
 import (
-	"context"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 )
@@ -26,11 +24,11 @@ func TestWatchFolderSharesOneWatch(t *testing.T) {
 
 	dir := t.TempDir()
 
-	first, dropFirst, err := watchFolder(dir)
+	first, dropFirst, err := Folder(dir)
 	if err != nil {
 		t.Fatalf("watching %q: %v", dir, err)
 	}
-	second, dropSecond, err := watchFolder(dir)
+	second, dropSecond, err := Folder(dir)
 	if err != nil {
 		t.Fatalf("watching %q twice: %v", dir, err)
 	}
@@ -68,11 +66,11 @@ func TestWatchFolderDropsOnce(t *testing.T) {
 
 	dir := t.TempDir()
 
-	_, drop, err := watchFolder(dir)
+	_, drop, err := Folder(dir)
 	if err != nil {
 		t.Fatalf("watching %q: %v", dir, err)
 	}
-	_, keep, err := watchFolder(dir)
+	_, keep, err := Folder(dir)
 	if err != nil {
 		t.Fatalf("watching %q twice: %v", dir, err)
 	}
@@ -83,63 +81,5 @@ func TestWatchFolderDropsOnce(t *testing.T) {
 
 	if got := subscribers(dir); got != 1 {
 		t.Errorf("got %d subscribers, want the one which never left", got)
-	}
-}
-
-// a folder which cannot be watched must not swallow the request: the
-// client is answered and comes back on its own terms
-func TestWatchListingWithoutAWatchAnswersAtOnce(t *testing.T) {
-
-	livePace(t, time.Minute)
-
-	gone := filepath.Join(t.TempDir(), "not-there")
-	read := func() ([]listEntry, string, error) { return nil, "state", nil }
-
-	done := make(chan struct{})
-	go func() {
-		watchListing(context.Background(), gone, read, nil, "state")
-		close(done)
-	}()
-
-	select {
-	case <-done:
-	case <-time.After(2 * time.Second):
-		t.Fatal("a listing of an unwatchable folder was held anyway")
-	}
-}
-
-// an in-memory tree has no path to hand a watcher. it is listed like any
-// other, it just never asks the client to come back for an answer which
-// could not arrive.
-func TestLiveListingWithoutAPathIsNotArmed(t *testing.T) {
-
-	liveMode(t)
-
-	body := get(DirListHandler(testFS()), "/").Body.String()
-
-	if strings.Contains(body, "hx-get") {
-		t.Error("a listing which cannot be watched armed a poll")
-	}
-	if !strings.Contains(body, "a.txt") {
-		t.Error("the listing did not render its entries")
-	}
-}
-
-// the same listing, asked as a poll: answered, not held
-func TestLivePollWithoutAPathIsNotHeld(t *testing.T) {
-
-	liveMode(t)
-	livePace(t, time.Minute)
-
-	done := make(chan int, 1)
-	go func() { done <- get(DirListHandler(testFS()), "/?live=whatever").Code }()
-
-	select {
-	case code := <-done:
-		if code != 200 {
-			t.Errorf("got status %d, want 200", code)
-		}
-	case <-time.After(2 * time.Second):
-		t.Fatal("a poll for an unwatchable tree was held")
 	}
 }

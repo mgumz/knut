@@ -5,23 +5,25 @@ package handler
 
 import (
 	"net/http"
+
+	"github.com/mgumz/knut/internal/pkg/knut/view"
 )
 
-var indexTmpl = newPageTemplate("index")
+var indexTmpl = view.Template("index")
 
 // IndexHandler lists the published windows on a small index page.
 func IndexHandler(windows []string) http.Handler {
 
 	data := struct {
-		page
+		view.Page
 		Windows []string
-	}{page: newPage(""), Windows: windows}
+	}{Page: view.NewPage(""), Windows: windows}
 
-	body, err := renderPage(indexTmpl, data)
+	body, err := view.Render(indexTmpl, data)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
-			writeStatus(w, http.StatusInternalServerError)
+			view.Status(w, http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")

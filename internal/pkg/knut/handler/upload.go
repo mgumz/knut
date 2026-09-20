@@ -13,15 +13,17 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/mgumz/knut/internal/pkg/knut/view"
 )
 
 // the live form posts through htmx and reports how far the bytes got. the
 // bar is honest about what it measures: it fills while the browser sends,
 // so it stands at 100% while the last of it is still being written to
 // disk - that is what the note next to it says.
-var uploadTmpl = newPageTemplate("upload")
+var uploadTmpl = view.Template("upload")
 
-var uploadDoneTmpl = newPageTemplate("upload-done")
+var uploadDoneTmpl = view.Template("upload-done")
 
 // UploadHandler handles uploads to a given 'dir'. for method "GET" an upload-form is
 // rendered, "POST" handles the actual upload
@@ -34,19 +36,19 @@ func UploadHandler(dir string) http.Handler {
 		case "GET", "HEAD":
 			// the body is dropped by net/http for HEAD
 			form := struct {
-				page
+				view.Page
 				Action string
 			}{
-				page: newPage("file upload"),
+				Page: view.NewPage("file upload"),
 				// htmx needs the uri spelled out, an empty "hx-post" is
 				// no url to it - and this handler sits at its window,
 				// not below it
-				Action: requestPath(r),
+				Action: view.RequestPath(r),
 			}
-			writePageFor(w, r, uploadTmpl, form)
+			view.WriteFor(w, r, uploadTmpl, form)
 			return
 		default:
-			writeStatus(w, http.StatusMethodNotAllowed)
+			view.Status(w, http.StatusMethodNotAllowed)
 			return
 		}
 
@@ -54,7 +56,7 @@ func UploadHandler(dir string) http.Handler {
 		r.ParseMultipartForm(4096)
 
 		if r.MultipartForm == nil {
-			writeStatus(w, http.StatusBadRequest)
+			view.Status(w, http.StatusBadRequest)
 			return
 		}
 
@@ -71,12 +73,12 @@ func UploadHandler(dir string) http.Handler {
 		}
 
 		done := struct {
-			page
-			Size     string
+			view.Page
+			Size     int64
 			Duration string
 		}{
-			page:     newPage("file upload"),
-			Size:     humanSize(nBytes),
+			Page:     view.NewPage("file upload"),
+			Size:     nBytes,
 			Duration: time.Since(startTime).String(),
 		}
 
@@ -84,7 +86,7 @@ func UploadHandler(dir string) http.Handler {
 		// own window, so a listing is never in the same document to hear
 		// one. a listing watching the folder the bytes landed in is held
 		// at the server and answers on its own, within a tick.
-		writePageFor(w, r, uploadDoneTmpl, done)
+		view.WriteFor(w, r, uploadDoneTmpl, done)
 	})
 }
 

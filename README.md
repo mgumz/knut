@@ -115,7 +115,7 @@ until it is reloaded by hand.
 
 To vendor another htmx release:
 
-    $> go generate ./internal/pkg/knut/handler
+    $> go generate ./internal/pkg/knut/view
 
 ## Build & Installing
 

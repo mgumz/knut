@@ -150,9 +150,9 @@ func (sort listSort) columns() []listColumn {
 	for _, key := range keys {
 		column, order := listColumn{Key: key}, orderAsc
 		if key == sort.Key {
-			column.Arrow = " ↑"
+			column.Arrow = " ▴"
 			if sort.Order == orderDesc {
-				column.Arrow = " ↓"
+				column.Arrow = " ▾"
 			} else {
 				order = orderDesc
 			}

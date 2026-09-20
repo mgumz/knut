@@ -159,14 +159,14 @@ func TestDirListSortLinks(t *testing.T) {
 	handler := DirListHandler(testFS())
 
 	body := get(handler, "/?sort=size&order=asc").Body.String()
-	for _, want := range []string{"?sort=size&amp;order=desc", "?sort=name&amp;order=asc", "↑"} {
+	for _, want := range []string{"?sort=size&amp;order=desc", "?sort=name&amp;order=asc", "▴"} {
 		if !strings.Contains(body, want) {
 			t.Errorf("listing sorted by size asc does not link %q", want)
 		}
 	}
 
 	body = get(handler, "/?sort=size&order=desc").Body.String()
-	for _, want := range []string{"?sort=size&amp;order=asc", "↓"} {
+	for _, want := range []string{"?sort=size&amp;order=asc", "▾"} {
 		if !strings.Contains(body, want) {
 			t.Errorf("listing sorted by size desc does not link %q", want)
 		}

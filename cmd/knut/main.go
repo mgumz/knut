@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"slices"
 	"strings"
 
 	qrcode "github.com/skip2/go-qrcode"
@@ -46,7 +47,7 @@ func main() {
 	}
 
 	if opts.DoIndexHandler {
-		tree.Handle("/", handler.IndexHandler(windows))
+		serveIndex(tree, windows)
 	}
 
 	h := buildHandlerChain(tree, opts)
@@ -67,6 +68,21 @@ func main() {
 func fatal(format string, a ...any) {
 	fmt.Fprintf(os.Stderr, "error: "+format+"\n", a...)
 	os.Exit(1)
+}
+
+// serveIndex publishes the list of mappings at "/".
+//
+// a mapping already sitting at "/" keeps it: it is the more explicit wish
+// of the two, and the muxer takes exactly one handler per pattern - asking
+// it for a second one is a panic, not an error.
+func serveIndex(tree *http.ServeMux, windows []string) {
+
+	if slices.Contains(windows, "/") {
+		fmt.Fprintf(os.Stderr, "warning: -serve-index ignored, a mapping is published through %q\n", "/")
+		return
+	}
+
+	tree.Handle("/", handler.IndexHandler(windows))
 }
 
 // resolveBindAddr optionally prompts for a concrete interface address when the

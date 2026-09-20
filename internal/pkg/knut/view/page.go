@@ -44,8 +44,8 @@ var pages = template.Must(template.New("knut").Funcs(funcs).Parse(knutHTML))
 // funcs is what the markup can call. formatting a byte count is a
 // presentation decision, so the block which shows one makes it - the go
 // side hands over the number. the same goes for the uri of a page and the
-// code drawn from it.
-var funcs = template.FuncMap{"humansize": humanSize, "qrcode": qrCode}
+// code drawn from it, and for the icon.
+var funcs = template.FuncMap{"humansize": humanSize, "qrcode": qrCode, "icon": iconURI}
 
 // Page carries what the "layout" block needs. Page specific data embeds
 // it, so a "content" template reaches both its own fields and the ones

@@ -21,6 +21,13 @@ are what keep a block starting and ending where its markup does.
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ .Title }}</title>
+{{- /*
+the icon travels in the page for the same reason the stylesheet does: no
+uri has to be reserved for it and it survives whatever prefix a mapping is
+published under. it also answers the request every browser makes for
+/favicon.ico before it is made - knut has nothing to say to that one.
+*/}}
+    <link rel="icon" type="image/svg+xml" href="{{ icon }}">
     <style>{{ .CSS }}</style>
 {{- if .Live }}
     <script src="{{ .LiveURI }}" defer></script>

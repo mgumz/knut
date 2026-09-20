@@ -221,35 +221,4 @@ func plural(n int, noun string) string {
 	return strconv.Itoa(n) + " " + noun + "s"
 }
 
-var listingTmpl = newPageTemplate("listing", `{{ if not .Entries }}
-<pre class="tree">{{ .Tree }}</pre>
-<p>this tree is bare.</p>
-{{- with .Parent }}
-<p><a href="{{ . }}">../</a></p>
-{{- end }}
-{{ else }}
-<table class="listing">
-<thead>
-<tr>
-{{- range .Columns }}
-<th class="{{ .Key }}"><a href="{{ .URL }}">{{ .Key }}<span class="arrow">{{ .Arrow }}</span></a></th>
-{{- end }}
-</tr>
-</thead>
-<tbody>
-{{- with .Parent }}
-<tr class="dir"><td class="name"><a href="{{ . }}">../</a></td><td class="type">dir</td><td class="size">-</td><td class="date">-</td></tr>
-{{- end }}
-{{- range .Entries }}
-<tr{{ if .Dir }} class="dir"{{ end }}>
-<td class="name"><a href="{{ .URL }}">{{ .Name }}</a></td>
-<td class="type">{{ .Type }}</td>
-<td class="size">{{ .Size }}</td>
-<td class="date"><time datetime="{{ .ISO }}">{{ .Date }}</time></td>
-</tr>
-{{- end }}
-</tbody>
-</table>
-{{ end }}
-<p class="meta">{{ .Summary }}</p>
-`)
+var listingTmpl = newPageTemplate("listing")

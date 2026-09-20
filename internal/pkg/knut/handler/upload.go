@@ -15,15 +15,9 @@ import (
 	"time"
 )
 
-var uploadTmpl = newPageTemplate("upload", `<form method="post" enctype="multipart/form-data">
-<div><input type="file" name="upload_file"></div>
-<div><input type="submit" value="Upload"></div>
-</form>
-`)
+var uploadTmpl = newPageTemplate("upload")
 
-var uploadDoneTmpl = newPageTemplate("upload-done", `<p>ok, received {{ .Size }} in {{ .Duration }}</p>
-<p class="meta"><a href="">upload another file</a></p>
-`)
+var uploadDoneTmpl = newPageTemplate("upload-done")
 
 // UploadHandler handles uploads to a given 'dir'. for method "GET" an upload-form is
 // rendered, "POST" handles the actual upload

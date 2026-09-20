@@ -8,8 +8,7 @@ import (
 	"strings"
 )
 
-var redirectTmpl = newPageTemplate("redirect", `<p>moved permanently to <a href="{{ .Location }}">{{ .Location }}</a></p>
-`)
+var redirectTmpl = newPageTemplate("redirect")
 
 func RedirectHandler(path, location string) http.Handler {
 

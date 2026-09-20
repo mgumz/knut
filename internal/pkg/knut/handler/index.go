@@ -7,13 +7,7 @@ import (
 	"net/http"
 )
 
-var indexTmpl = newPageTemplate("index", `<pre class="tree">{{ .Tree }}</pre>
-<ul class="windows">
-{{- range .Windows }}
-<li><a href=".{{ . }}">{{ . }}</a></li>
-{{- end }}
-</ul>
-`)
+var indexTmpl = newPageTemplate("index")
 
 // IndexHandler lists the published windows on a small index page.
 func IndexHandler(windows []string) http.Handler {

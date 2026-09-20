@@ -7,9 +7,7 @@ import (
 	"net/http"
 )
 
-var statusTmpl = newPageTemplate("status", `<pre class="tree">{{ .Tree }}</pre>
-<p class="status"><span class="code">{{ .Code }}</span> {{ .Text }}</p>
-`)
+var statusTmpl = newPageTemplate("status")
 
 // writeStatus renders the given status code and
 // a text associated with that code

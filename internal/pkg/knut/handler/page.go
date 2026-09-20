@@ -21,33 +21,27 @@ import (
 //go:embed assets/knut.css
 var knutCSS string
 
-// layoutHTML is the frame around every page. the page specific markup is
-// pulled in as the "content" template.
-const layoutHTML = `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ .Title }}</title>
-<style>{{ .CSS }}</style>
-</head>
-<body>
-<main>
-<div class="brand">knut</div>
-<div class="page">
-{{- with .Heading }}
-<h1>{{ . }}</h1>
-{{- end }}
-{{ template "content" . }}
-</div>
-</main>
-<footer><div>knut {{ .Version }}</div></footer>
-</body>
-</html>
-`
+// contentTmpl is the name of the page specific part of the layout.
+const contentTmpl = "content"
 
-// page carries what layoutHTML needs. page specific data embeds it, so a
-// "content" template reaches both its own fields and the ones below.
+// layoutTmpl is the frame around every page, the block the other ones are
+// rendered inside of.
+const layoutTmpl = "layout"
+
+// knutHTML is every page knut renders: the layout and one block per page.
+// it sits next to the stylesheet instead of in a string literal here -
+// markup is easier to read, to diff and to edit as markup.
+//
+//go:embed assets/knut.html
+var knutHTML string
+
+// pages is knutHTML parsed, once. a page template is this set cloned with
+// "content" pointed at one of its blocks, see newPageTemplate.
+var pages = template.Must(template.New("knut").Parse(knutHTML))
+
+// page carries what the "layout" block needs. page specific data embeds
+// it, so a "content" template reaches both its own fields and the ones
+// below.
 type page struct {
 	Title   string
 	Heading string
@@ -71,11 +65,21 @@ func newPage(heading string) page {
 	}
 }
 
-// newPageTemplate renders "content" inside the shared knut layout.
-func newPageTemplate(name, content string) *template.Template {
-	tmpl := template.Must(template.New(name).Parse(layoutHTML))
-	template.Must(tmpl.New("content").Parse(content))
-	return tmpl
+// newPageTemplate frames the block "name" of assets/knut.html in the
+// shared knut layout.
+//
+// the block is reached through a "content" of its own rather than by
+// renaming it: the layout asks for "content".
+func newPageTemplate(name string) *template.Template {
+
+	tmpl := template.Must(pages.Clone())
+	if tmpl.Lookup(name) == nil {
+		panic("handler: no template " + name + " in assets/knut.html")
+	}
+
+	template.Must(tmpl.New(contentTmpl).Parse(`{{ template "` + name + `" . }}`))
+
+	return tmpl.Lookup(layoutTmpl)
 }
 
 // renderPage renders "data" into a buffer. rendering upfront keeps a

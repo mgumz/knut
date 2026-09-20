@@ -87,11 +87,7 @@ func MyIPHandler(infoAPI string, fuzzy bool) http.Handler {
 		fuzzyIP = func(mi *myIP) *myIP { mi.IP = fuzzyMyIP(mi.IP); return mi }
 	}
 
-	tmpl := newPageTemplate("myip", `<p>Your IP is: <span id="ip">{{ .IP }}</span>:<span id="port">{{ .Port }}</span></p>
-{{ if .ASN -}}
-<p>Your ASN is: <span id="asn">{{ .ASN }}</span></p>
-{{ end -}}
-`)
+	tmpl := newPageTemplate("myip")
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ip, port, _ := net.SplitHostPort(r.RemoteAddr)

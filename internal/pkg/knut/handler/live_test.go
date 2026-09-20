@@ -61,8 +61,13 @@ func armedURL(t *testing.T, folder, body string) string {
 	return folder + strings.ReplaceAll(match[1], "&amp;", "&")
 }
 
-// without -live knut renders what it always rendered: no script, no
-// attributes, nothing to reserve a uri for.
+// without -live knut talks to no one: no polling, no fragments, no uri
+// reserved for an asset.
+//
+// the listing is the one page which carries a script either way - the
+// filter is inlined into it and leans on nothing, see
+// assets/listing-filter.js. what -live buys is htmx, and that is what is
+// checked for here.
 func TestLiveOffRendersNoJavaScript(t *testing.T) {
 
 	bodies := map[string]string{
@@ -71,14 +76,19 @@ func TestLiveOffRendersNoJavaScript(t *testing.T) {
 	}
 
 	// the word "htmx" itself is in the stylesheet, which is inlined into
-	// every page: what must not be there is a script, an attribute for one
-	// or the uri it would be served from
+	// every page: what must not be there is an attribute driving one of
+	// those requests, or the uri htmx would be served from
 	for page, body := range bodies {
-		for _, unwanted := range []string{"hx-get", "hx-post", "hx-on", `id="gone"`, knut.LiveAssetURI, "<script"} {
+		for _, unwanted := range []string{"hx-get", "hx-post", "hx-on", `id="gone"`, knut.LiveAssetURI} {
 			if strings.Contains(body, unwanted) {
 				t.Errorf("the %s page mentions %q without -live", page, unwanted)
 			}
 		}
+	}
+
+	// the upload page has nothing to filter and stays free of script
+	if strings.Contains(bodies["upload"], "<script") {
+		t.Error("the upload page carries a script without -live")
 	}
 }
 

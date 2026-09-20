@@ -52,13 +52,28 @@ are what keep a block starting and ending where its markup does.
 {{ end }}
 
 {{/*
-listing: .Columns, .Entries, .Parent, .Summary, .Watch
+listing: .Columns, .Entries, .Parent, .Summary, .Watch, .Filter
 
 the whole listing sits in one block, table or bare tree: a live listing
 swaps that block for the one the server just rendered, and a folder which
 fell empty (or filled up) swaps along with everything else.
+
+the filter box is deliberately not part of that block - a swap would take
+the typed query and the caret with it. it starts hidden and the script
+unhides it, so a browser without javascript is not handed a dead control.
+
+the box and the script are skipped for a fragment: htmx picks "#listing"
+out of that response and drops the rest, so sending them along would only
+be parsed and thrown away.
 */}}
 {{ define "listing" -}}
+{{ if not .Fragment -}}
+<div class="filter">
+  <input id="filter" type="search" placeholder="filter" autocomplete="off" spellcheck="false" hidden>
+  <span id="filter-count" class="meta"></span>
+</div>
+
+{{ end -}}
 <div id="listing"{{ with .Watch }} hx-get="{{ . }}" hx-trigger="load" hx-select="#listing" hx-swap="outerHTML"{{ end }}>
 {{- if not .Entries }}
   <p>this tree is bare.</p>
@@ -76,7 +91,7 @@ fell empty (or filled up) swaps along with everything else.
   </thead>
   <tbody>
 {{- with .Parent }}
-    <tr class="dir"><td class="name"><a href="{{ . }}">../</a></td><td class="type">dir</td><td class="size">-</td><td class="date">-</td></tr>
+    <tr class="dir parent"><td class="name"><a href="{{ . }}">../</a></td><td class="type">dir</td><td class="size">-</td><td class="date">-</td></tr>
 {{- end }}
 {{- range .Entries }}
     <tr{{ if .Dir }} class="dir"{{ end }}>
@@ -92,6 +107,9 @@ fell empty (or filled up) swaps along with everything else.
 
 <p class="meta summary">{{ .Summary }}</p>
 </div>
+{{- if not .Fragment }}
+<script>{{ .Filter }}</script>
+{{- end }}
 {{ end }}
 
 {{/* index: .Windows */}}

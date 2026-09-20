@@ -5,13 +5,24 @@ package view
 
 import (
 	"cmp"
+	"html/template"
 	"net/http"
 	"net/url"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
+
+	_ "embed"
 )
+
+// filterJS narrows a listing in the browser. it is inlined into the listing
+// page the way the stylesheet is inlined into every page: no uri has to be
+// reserved for it and it survives whatever prefix a mapping is published
+// under. it ships with the listing alone - no other page has rows to hide.
+//
+//go:embed assets/listing-filter.js
+var filterJS string
 
 // the listing is rendered in the order given by "?sort=" and "?order=".
 const (
@@ -172,6 +183,9 @@ type listing struct {
 	Parent  string // link to the enclosing folder, empty at the top
 	Summary string
 	Watch   string // url a live listing polls, empty when it does not
+
+	Filter   template.JS // the client side filter, inlined into the page
+	Fragment bool        // this render goes to htmx, which wants #listing alone
 }
 
 // watch arms the listing for live updates: the rendered block polls the
@@ -192,10 +206,12 @@ func newListing(r *http.Request, entries []ListEntry, sort listSort, parent bool
 	sort.apply(entries)
 
 	list := listing{
-		Page:    PageFor(r, RequestPath(r)),
-		Columns: sort.columns(),
-		Entries: entries,
-		Summary: summarize(entries),
+		Page:     PageFor(r, RequestPath(r)),
+		Columns:  sort.columns(),
+		Entries:  entries,
+		Summary:  summarize(entries),
+		Filter:   template.JS(filterJS),
+		Fragment: isFragment(r),
 	}
 	if parent {
 		list.Parent = "../"

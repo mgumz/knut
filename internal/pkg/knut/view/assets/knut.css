@@ -236,6 +236,37 @@ table.listing {
 	border-top: 4px solid var(--rule);
 }
 
+/* the filter box of a listing. it is rendered hidden and unhidden by the
+ * script, so without javascript nothing of it shows */
+
+.filter {
+	display: flex;
+	align-items: baseline;
+	gap: .6rem;
+	margin-bottom: .75rem;
+}
+
+.filter input {
+	flex: 1;
+	min-width: 0;
+	padding: .2rem .6rem;
+	border: 0;
+	border-bottom: 2px solid var(--rule);
+	background: transparent;
+	color: inherit;
+	font: inherit;
+}
+
+.filter input:focus {
+	outline: 0;
+	border-bottom-color: var(--accent);
+	background: var(--hover);
+}
+
+.filter input::placeholder {
+	color: var(--muted);
+}
+
 /* index of the published mappings */
 
 ul.windows {

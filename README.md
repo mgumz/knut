@@ -91,7 +91,7 @@ Mapping Format:
 
 A published folder is rendered as a table. Click a column header to sort by
 it, click the same one again to turn the order around. The header of the
-page carries a QR code of the URI on screen, to point a phone at.
+page carries a QR code of the URL on screen, to point a phone at.
 
 The box above the table narrows the listing while you type. It runs in the
 browser and asks the server nothing, so it needs no flag:
@@ -131,6 +131,18 @@ for every entry, `zip` only for a folder.
   `sub-2026-09-19T15-04.zip`
 * the URI is the folder plus `?zip`, so it can be fetched without the page:
   `curl -OJ 'http://host:8080/sub/?zip'`
+
+`qr` opens a large code to scan on top of the listing, for the phone next to
+the screen:
+
+* the code carries the URL of the entry it hangs on: the one on `a.txt`
+  downloads `a.txt`, the one on `sub/` opens the listing of `sub/`
+* the URI is the entry plus `?qr`, drawn when it is opened
+* a page reached as `localhost` or `127.0.0.1` offers no codes: the phone
+  resolves such a URL itself and the request never leaves it. reach knut by
+  a name or address the phone can use and the codes are there - the machine
+  the browser runs on plays no part in it
+
 ## Live Views
 
 `-live` makes the rendered pages move:

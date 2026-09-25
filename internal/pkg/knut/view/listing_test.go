@@ -15,7 +15,7 @@ func TestListingRenders(t *testing.T) {
 
 	entries := []ListEntry{NewListEntry("a.txt", 12, modTime(15), false)}
 	r := httptest.NewRequest("GET", "/", nil)
-	list := newListing(r, entries, listSort{Key: sortKeyName, Order: orderAsc}, true)
+	list := newListing(r, entries, listSort{Key: sortKeyName, Order: orderAsc}, ListOpts{Parent: true})
 
 	body, err := Render(Template("listing"), list)
 	if err != nil {
@@ -38,7 +38,7 @@ func TestListingCarriesTheFilter(t *testing.T) {
 
 	entries := []ListEntry{NewListEntry("a.txt", 12, modTime(15), false)}
 	r := httptest.NewRequest("GET", "/", nil)
-	list := newListing(r, entries, listSort{Key: sortKeyName, Order: orderAsc}, true)
+	list := newListing(r, entries, listSort{Key: sortKeyName, Order: orderAsc}, ListOpts{Parent: true})
 
 	body, err := Render(Template("listing"), list)
 	if err != nil {
@@ -80,7 +80,7 @@ func TestListingFragmentSkipsTheFilter(t *testing.T) {
 	r := httptest.NewRequest("GET", "/", nil)
 	r.Header.Set("HX-Request", "true")
 
-	list := newListing(r, entries, listSort{Key: sortKeyName, Order: orderAsc}, true)
+	list := newListing(r, entries, listSort{Key: sortKeyName, Order: orderAsc}, ListOpts{Parent: true})
 	if !list.Fragment {
 		t.Fatal("a request from htmx does not render as a fragment")
 	}

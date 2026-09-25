@@ -41,6 +41,13 @@ func DirListHandler(fsys http.FileSystem) http.Handler {
 		}
 		defer dir.Close()
 
+		// a file is as worth scanning as a folder, so "?qr" is answered
+		// before the two part ways
+		if _, ok := r.URL.Query()[view.QueryQR]; ok {
+			view.QRImage(w, r)
+			return
+		}
+
 		if fi, err := dir.Stat(); err != nil || !fi.IsDir() {
 			files.ServeHTTP(w, r)
 			return
@@ -75,6 +82,7 @@ func DirListHandler(fsys http.FileSystem) http.Handler {
 			Dir:    watchDir(fsys, name),
 			Parent: name != "/",
 			Zip:    true,
+			QR:     true,
 		}
 
 		// the folder may be gone by now - it was opened above, not held

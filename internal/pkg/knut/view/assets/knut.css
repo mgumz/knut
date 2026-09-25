@@ -241,6 +241,37 @@ table.listing {
 	color: var(--accent);
 }
 
+/* the code of one entry, on top of the listing it was asked from */
+
+.qr-modal {
+	position: fixed;
+	inset: 0;
+	width: fit-content;
+	height: fit-content;
+	max-width: calc(100vw - 2 * var(--gutter));
+	margin: auto;
+	padding: var(--gutter);
+	border: 4px solid var(--rule);
+	background: var(--bg);
+	color: var(--fg);
+}
+
+.qr-modal::backdrop {
+	background: rgb(0 0 0 / 60%);
+}
+
+.qr-modal img {
+	display: block;
+	width: min(20rem, 60vh, calc(100vw - 4 * var(--gutter)));
+	height: auto;
+}
+
+.qr-modal p {
+	max-width: min(20rem, 60vh, calc(100vw - 4 * var(--gutter)));
+	margin: .75rem 0 0;
+	overflow-wrap: anywhere;
+}
+
 .listing .dir .name a {
 	color: var(--dir);
 	font-weight: 700;

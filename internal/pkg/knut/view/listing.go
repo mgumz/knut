@@ -24,6 +24,14 @@ import (
 //go:embed assets/listing-filter.js
 var filterJS string
 
+// qrJS opens the code of a row in a dialog on top of the listing, instead
+// of walking the reader to a page showing a png. it is inlined like the
+// filter, and like the filter it is an addition: without it the link is
+// followed and the code shown on a page of its own.
+//
+//go:embed assets/listing-qr.js
+var qrJS string
+
 // the listing is rendered in the order given by "?sort=" and "?order=".
 const (
 	sortKeyName = "name"
@@ -39,6 +47,7 @@ const (
 )
 
 // what a listing asks of a folder or a file besides the thing itself:
+// "?zip" is the folder as an archive, "?qr" the code pointing at either.
 //
 // they hang on the uri they mean instead of on a reserved one of their
 // own: nothing has to be taken out of a published tree, and the links
@@ -47,6 +56,7 @@ const (
 // reads them back - hence exported, the two are a package apart.
 const (
 	QueryZip = "zip"
+	QueryQR  = "qr"
 )
 
 // entryType is the kind of an entry as a number: sorting by type compares
@@ -72,6 +82,7 @@ type ListEntry struct {
 	Date       string // modification time, local
 	ISO        string // the same time, machine readable
 	ArchiveZip string // download of the whole folder, empty where there is none
+	CodeQR     bool   // this entry can be shown as a code to scan
 
 	Bytes int64 // size of a file, 0 for a folder - the markup humanizes it
 	mod   time.Time
@@ -196,8 +207,13 @@ type listing struct {
 	Summary string
 	Watch   string // url a live listing polls, empty when it does not
 
+	// what the folder on screen offers of itself. the rows carry the
+	// same two for what is in it.
 	ArchiveZip string // download of this folder, empty where there is none
+	CodeQR     bool   // this folder can be shown as a code to scan
+
 	Filter   template.JS // the client side filter, inlined into the page
+	QR       template.JS // the code dialog, inlined next to it
 	Fragment bool        // this render goes to htmx, which wants #listing alone
 }
 
@@ -221,11 +237,17 @@ type ListOpts struct {
 	// in it can be taken along as an archive.
 	Zip bool
 
+	// QR says "?qr" is answered: every row, and the folder itself, can be
+	// handed to a device which is not the one reading the listing.
+	QR bool
 }
 
 // offer hands the folder on screen, and every row of it, the links the
 // handler behind the listing answers.
 //
+// the codes hang on the url of the page, so a page which has none - it was
+// asked for as "localhost", which leads back to whoever reads it - offers
+// none of them, the call the header makes for its own code.
 func (l *listing) offer(opts ListOpts) {
 
 	scannable := opts.QR && l.URL != ""
@@ -233,11 +255,13 @@ func (l *listing) offer(opts ListOpts) {
 	if opts.Zip {
 		l.ArchiveZip = "?" + QueryZip
 	}
+	l.CodeQR = scannable
 
 	for i := range l.Entries {
 		if opts.Zip && l.Entries[i].Dir() {
 			l.Entries[i].ArchiveZip = l.Entries[i].URL + "?" + QueryZip
 		}
+		l.Entries[i].CodeQR = scannable
 	}
 }
 
@@ -264,6 +288,7 @@ func newListing(r *http.Request, entries []ListEntry, sort listSort, opts ListOp
 		Entries:  entries,
 		Summary:  summarize(entries),
 		Filter:   template.JS(filterJS),
+		QR:       template.JS(qrJS),
 		Fragment: isFragment(r),
 	}
 	if opts.Parent {

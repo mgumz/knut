@@ -79,7 +79,12 @@ be parsed and thrown away.
   <input id="filter" type="search" placeholder="filter" autocomplete="off" spellcheck="false" hidden>
   <span id="filter-count" class="meta"></span>
 </div>
-
+{{ if .CodeQR }}
+<dialog id="qr-modal" class="qr-modal">
+  <img id="qr-image" alt="" width="320" height="320">
+  <p id="qr-caption" class="meta"></p>
+</dialog>
+{{ end }}
 {{ end -}}
 <div id="listing"{{ with .Watch }} hx-get="{{ . }}" hx-trigger="load" hx-select="#listing" hx-swap="outerHTML"{{ end }}>
 {{- if not .Entries }}
@@ -96,6 +101,7 @@ be parsed and thrown away.
 {{- end }}
       <th class="actions">
 {{- with .ArchiveZip }}<a class="zip" href="{{ . }}" title="download this folder as a zip">zip</a>{{ end }}
+{{- if .CodeQR }}<a class="qr-link" href="./" title="show a code to scan">qr</a>{{ end }}
       </th>
     </tr>
   </thead>
@@ -111,6 +117,7 @@ be parsed and thrown away.
       <td class="date"><time datetime="{{ .ISO }}">{{ .Date }}</time></td>
       <td class="actions">
 {{- with .ArchiveZip }}<a class="zip" href="{{ . }}" title="download this folder as a zip">zip</a>{{ end }}
+{{- if .CodeQR }}<a class="qr-link" href="{{ .URL }}" title="show a code to scan">qr</a>{{ end }}
       </td>
     </tr>
 {{- end }}
@@ -122,6 +129,10 @@ be parsed and thrown away.
 </div>
 {{- if not .Fragment }}
 <script>{{ .Filter }}</script>
+<script>{{ .Keys }}</script>
+{{- if .CodeQR }}
+<script>{{ .QR }}</script>
+{{- end }}
 {{- end }}
 {{ end }}
 

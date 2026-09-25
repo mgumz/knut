@@ -18,6 +18,39 @@ import (
 // per css pixel - and costs well under a kilobyte either way.
 const qrPixels = 256
 
+// qrLargePixels is how wide a code meant to be scanned off the page
+// itself is drawn - the one a listing shows for a single entry, not the
+// thumbnail in the header.
+const qrLargePixels = 512
+
+// QRImage answers "r" with a code pointing at the uri it was asked for,
+// the png alone.
+//
+// it is one request per code shown instead of one code per row travelling
+// with every listing: a folder of a thousand entries would carry a
+// thousand images nobody asked to see.
+//
+// a page which has no url worth scanning has no code either - see
+// requestURL. that is a 404 rather than an empty answer: the entry is
+// there, the code of it is not.
+func QRImage(w http.ResponseWriter, r *http.Request) {
+
+	url := requestURL(r)
+	if url == "" {
+		Status(w, http.StatusNotFound)
+		return
+	}
+
+	png, err := qrcode.Encode(url, qrcode.Medium, qrLargePixels)
+	if err != nil {
+		Status(w, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "image/png")
+	w.Write(png)
+}
+
 // qrCode draws "url" as a code to scan and hands it back as a data uri -
 // no second request, no uri to reserve, same as the stylesheet.
 //
@@ -45,9 +78,13 @@ func qrCode(url string) template.URL {
 	return template.URL("data:image/png;base64," + base64.StdEncoding.EncodeToString(png))
 }
 
-// requestURL spells out what "r" asked for: a code is scanned by a device
-// which is not the one showing the page, so the host has to be in it -
-// and a host only that one device knows is no url to hand anybody.
+// requestURL spells out what "r" asked for: a code is read somewhere else
+// than where it is drawn, so the host has to be in it.
+//
+// a loopback host is no such url. it is resolved wherever it is read, so a
+// device scanning it would ask itself and never reach knut. which machine
+// the browser showing the page runs on has nothing to do with it - what
+// counts is whether the host it asked for leads back here from elsewhere.
 func requestURL(r *http.Request) string {
 
 	if r.Host == "" || isLoopback(r.Host) {
@@ -67,9 +104,9 @@ func requestURL(r *http.Request) string {
 	return scheme + "://" + r.Host + requestURI(r)
 }
 
-// isLoopback reports whether "host" names the machine the browser itself
-// runs on. the port is none of its business, and an address in brackets
-// is one net.SplitHostPort hands over without them.
+// isLoopback reports whether "host" is one which leads back to whoever
+// resolves it, wherever that is. the port is none of its business, and an
+// address in brackets is one net.SplitHostPort hands over without them.
 func isLoopback(host string) bool {
 
 	name := host

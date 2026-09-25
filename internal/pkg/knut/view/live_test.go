@@ -100,7 +100,7 @@ func TestListingArmsThePollOnlyWhenItCanWatch(t *testing.T) {
 
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
-			if err := Listing(rec, req, test.dir, read, false); err != nil {
+			if err := Listing(rec, req, read, ListOpts{Dir: test.dir}); err != nil {
 				t.Fatalf("listing: %v", err)
 			}
 
@@ -169,7 +169,7 @@ func TestListingHoldsAPollOnlyInLiveMode(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/?"+liveParam+"="+state, nil)
 
 	start := time.Now()
-	if err := Listing(rec, req, t.TempDir(), read, false); err != nil {
+	if err := Listing(rec, req, read, ListOpts{Dir: t.TempDir()}); err != nil {
 		t.Fatalf("listing: %v", err)
 	}
 

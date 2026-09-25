@@ -102,7 +102,6 @@ browser and asks the server nothing, so it needs no flag:
 * `-term` excludes: `log -old` is every name carrying `log`, minus the ones
   carrying `old`
 * matching ignores case and looks at the name alone
-* `/` jumps into the box, `Escape` empties it
 * a typo still finds the file: where nothing matches exactly, the search is
   repeated with one mistyped letter allowed per term
 * the count on the right says how many of the entries are left, and `../`
@@ -113,6 +112,17 @@ browser and asks the server nothing, so it needs no flag:
 Without JavaScript the box does not appear and the table is plain HTML,
 like the rest of the page.
 
+### Keyboard navigation
+
+A bar marks one row of the listing:
+
+| key      | does                          |
+|----------|-------------------------------|
+| `j`, `↓` | move the bar down one row     |
+| `k`, `↑` | move the bar up one row       |
+| `Enter`  | follow the row the bar is on  |
+| `/`      | jump into the filter box      |
+| `Escape` | empty the filter box          |
 
 ### Actions
 

@@ -241,6 +241,19 @@ table.listing {
 	color: var(--accent);
 }
 
+/* the bar "j" and "k" walk the rows with. a pointer passing over a row
+ * tints it, the bar is the row which was picked - one is a solid block of
+ * accent, the other is not */
+
+.listing tr.selected td {
+	background: var(--accent);
+	color: var(--on-accent);
+}
+
+.listing tr.selected a {
+	color: var(--on-accent);
+}
+
 /* the code of one entry, on top of the listing it was asked from */
 
 .qr-modal {

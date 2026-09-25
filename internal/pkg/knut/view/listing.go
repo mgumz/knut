@@ -32,6 +32,13 @@ var filterJS string
 //go:embed assets/listing-qr.js
 var qrJS string
 
+// keysJS walks the rows of a listing from the keyboard. it is inlined like
+// the other two, and like them it adds: the listing is read and clicked
+// the same way without it.
+//
+//go:embed assets/listing-keys.js
+var keysJS string
+
 // the listing is rendered in the order given by "?sort=" and "?order=".
 const (
 	sortKeyName = "name"
@@ -214,6 +221,7 @@ type listing struct {
 
 	Filter   template.JS // the client side filter, inlined into the page
 	QR       template.JS // the code dialog, inlined next to it
+	Keys     template.JS // the keys which walk the rows, the same
 	Fragment bool        // this render goes to htmx, which wants #listing alone
 }
 
@@ -289,6 +297,7 @@ func newListing(r *http.Request, entries []ListEntry, sort listSort, opts ListOp
 		Summary:  summarize(entries),
 		Filter:   template.JS(filterJS),
 		QR:       template.JS(qrJS),
+		Keys:     template.JS(keysJS),
 		Fragment: isFragment(r),
 	}
 	if opts.Parent {

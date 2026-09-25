@@ -69,6 +69,25 @@ func TestListingCarriesTheFilter(t *testing.T) {
 	}
 }
 
+// the keys walk the rows of the listing they ship with
+func TestListingCarriesTheKeys(t *testing.T) {
+
+	entries := []ListEntry{NewListEntry("a.txt", 12, modTime(15), false)}
+	r := httptest.NewRequest("GET", "/", nil)
+	list := newListing(r, entries, listSort{Key: sortKeyName, Order: orderAsc}, ListOpts{Parent: true})
+
+	body, err := Render(Template("listing"), list)
+	if err != nil {
+		t.Fatalf("rendering the listing: %v", err)
+	}
+
+	for _, want := range []string{`classList.add("selected")`, `event.key === "j"`, `event.key === "ArrowDown"`} {
+		if !strings.Contains(string(body), want) {
+			t.Errorf("the listing does not render %q", want)
+		}
+	}
+}
+
 // htmx takes "#listing" out of the response and drops the rest: the script
 // has no business travelling with every poll.
 func TestListingFragmentSkipsTheFilter(t *testing.T) {

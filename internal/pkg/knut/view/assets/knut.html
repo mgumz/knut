@@ -94,11 +94,14 @@ be parsed and thrown away.
 {{- range .Columns }}
       <th class="{{ .Key }}"><a href="{{ .URL }}">{{ .Key }}<span class="arrow">{{ .Arrow }}</span></a></th>
 {{- end }}
+      <th class="actions">
+{{- with .ArchiveZip }}<a class="zip" href="{{ . }}" title="download this folder as a zip">zip</a>{{ end }}
+      </th>
     </tr>
   </thead>
   <tbody>
 {{- with .Parent }}
-    <tr class="dir parent"><td class="name"><a href="{{ . }}">../</a></td><td class="type">dir</td><td class="size">-</td><td class="date">-</td></tr>
+    <tr class="dir parent"><td class="name"><a href="{{ . }}">../</a></td><td class="type">dir</td><td class="size">-</td><td class="date">-</td><td class="actions"></td></tr>
 {{- end }}
 {{- range .Entries }}
     <tr{{ if .Dir }} class="dir"{{ end }}>
@@ -106,6 +109,9 @@ be parsed and thrown away.
       <td class="type">{{ .Type }}</td>
       <td class="size">{{ if .Dir }}-{{ else }}{{ .Bytes | humansize }}{{ end }}</td>
       <td class="date"><time datetime="{{ .ISO }}">{{ .Date }}</time></td>
+      <td class="actions">
+{{- with .ArchiveZip }}<a class="zip" href="{{ . }}" title="download this folder as a zip">zip</a>{{ end }}
+      </td>
     </tr>
 {{- end }}
   </tbody>

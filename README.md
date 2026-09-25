@@ -113,6 +113,24 @@ browser and asks the server nothing, so it needs no flag:
 Without JavaScript the box does not appear and the table is plain HTML,
 like the rest of the page.
 
+
+### Actions
+
+Every action in the last column acts on the entry of its row: `zip` takes
+the entry along, `qr` points a phone at it. The header of that column is
+the folder on screen and carries the same actions for it. `qr` is offered
+for every entry, `zip` only for a folder.
+
+`zip` answers with the folder and everything below it as an archive:
+
+* it is written while it is sent: no temporary file, and the size of the
+  folder does not matter
+* the files are deflated at the cheapest level, the folder entries stored
+* empty folders travel along, symlinks, sockets and devices do not
+* the name is the folder and the moment it was asked for:
+  `sub-2026-09-19T15-04.zip`
+* the URI is the folder plus `?zip`, so it can be fetched without the page:
+  `curl -OJ 'http://host:8080/sub/?zip'`
 ## Live Views
 
 `-live` makes the rendered pages move:

@@ -38,6 +38,17 @@ const (
 	dateFormat = "2006-01-02 15:04"
 )
 
+// what a listing asks of a folder or a file besides the thing itself:
+//
+// they hang on the uri they mean instead of on a reserved one of their
+// own: nothing has to be taken out of a published tree, and the links
+// survive whatever prefix a mapping sits under. the markup writes them
+// where ListOpts says they are answered, the handler which answers them
+// reads them back - hence exported, the two are a package apart.
+const (
+	QueryZip = "zip"
+)
+
 // entryType is the kind of an entry as a number: sorting by type compares
 // those instead of their names, the order of the constants is the order
 // they are listed in.
@@ -55,11 +66,12 @@ func (t entryType) String() string { return entryTypeNames[t] }
 // ListEntry is one row of a rendered folder, either a file on disk or an
 // entry inside a zip.
 type ListEntry struct {
-	Name string // display name, folders carry a trailing "/"
-	URL  string // href, relative to the folder being listed
-	Type entryType
-	Date string // modification time, local
-	ISO  string // the same time, machine readable
+	Name       string // display name, folders carry a trailing "/"
+	URL        string // href, relative to the folder being listed
+	Type       entryType
+	Date       string // modification time, local
+	ISO        string // the same time, machine readable
+	ArchiveZip string // download of the whole folder, empty where there is none
 
 	Bytes int64 // size of a file, 0 for a folder - the markup humanizes it
 	mod   time.Time
@@ -184,8 +196,49 @@ type listing struct {
 	Summary string
 	Watch   string // url a live listing polls, empty when it does not
 
+	ArchiveZip string // download of this folder, empty where there is none
 	Filter   template.JS // the client side filter, inlined into the page
 	Fragment bool        // this render goes to htmx, which wants #listing alone
+}
+
+// ListOpts is what the handler behind a listing answers, and so what the
+// rendered folder may offer. the page and the handler are two packages
+// apart: a listing which links what nobody answers is a dead link, and one
+// which hides what is answered is a feature nobody finds.
+type ListOpts struct {
+
+	// Dir is the folder on disk whose changes this listing follows: the
+	// folder itself for a tree, the folder the zip sits in for a zip.
+	// empty means there is nothing to watch, and then the listing renders
+	// once and arms no poll - there is no point sending a client back for
+	// an answer which can never come.
+	Dir string
+
+	// Parent says there is an enclosing folder to climb to.
+	Parent bool
+
+	// Zip says "?zip" is answered: the folder on screen and every folder
+	// in it can be taken along as an archive.
+	Zip bool
+
+}
+
+// offer hands the folder on screen, and every row of it, the links the
+// handler behind the listing answers.
+//
+func (l *listing) offer(opts ListOpts) {
+
+	scannable := opts.QR && l.URL != ""
+
+	if opts.Zip {
+		l.ArchiveZip = "?" + QueryZip
+	}
+
+	for i := range l.Entries {
+		if opts.Zip && l.Entries[i].Dir() {
+			l.Entries[i].ArchiveZip = l.Entries[i].URL + "?" + QueryZip
+		}
+	}
 }
 
 // watch arms the listing for live updates: the rendered block polls the
@@ -201,7 +254,7 @@ func (l *listing) watch(sort listSort, state string) {
 }
 
 // newListing sorts "entries" and frames them as the page "r" asked for.
-func newListing(r *http.Request, entries []ListEntry, sort listSort, parent bool) listing {
+func newListing(r *http.Request, entries []ListEntry, sort listSort, opts ListOpts) listing {
 
 	sort.apply(entries)
 
@@ -213,44 +266,39 @@ func newListing(r *http.Request, entries []ListEntry, sort listSort, parent bool
 		Filter:   template.JS(filterJS),
 		Fragment: isFragment(r),
 	}
-	if parent {
+	if opts.Parent {
 		list.Parent = "../"
 	}
+	list.offer(opts)
 
 	return list
 }
 
-// Listing answers "r" with the folder "read" lists. it is the whole
-// response path of a listing, shared by the folders on disk and the ones
-// inside a zip - what those two do differently is the read, not what
-// becomes of it.
-//
-// "dir" is the folder on disk whose changes this listing follows: the
-// folder itself for a tree, the folder the zip sits in for a zip. empty
-// means there is nothing to watch, and then the listing renders once and
-// arms no poll - there is no point sending a client back for an answer
-// which can never come.
+// Listing answers "r" with the folder "read" lists, as "opts" says the
+// handler behind it can. it is the whole response path of a listing,
+// shared by the folders on disk and the ones inside a zip - what those two
+// do differently is the read, not what becomes of it.
 //
 // a failed read is handed back instead of answered: what a folder which
 // cannot be read means is the caller's to say.
-func Listing(w http.ResponseWriter, r *http.Request, dir string, read ReadListing, parent bool) error {
+func Listing(w http.ResponseWriter, r *http.Request, read ReadListing, opts ListOpts) error {
 
 	entries, state, err := read()
 	if err != nil {
 		return err
 	}
 
-	watchable := liveEnabled() && dir != ""
+	watchable := liveEnabled() && opts.Dir != ""
 
 	// a poll from a live listing showing exactly what is there: hold the
 	// request until the folder moves. one held request per client, woken
 	// by the filesystem.
 	if want := r.URL.Query().Get(liveParam); watchable && want == state {
-		entries, state = watchListing(r.Context(), dir, read, entries, state)
+		entries, state = watchListing(r.Context(), opts.Dir, read, entries, state)
 	}
 
 	sort := listSortFromQuery(r.URL.Query())
-	list := newListing(r, entries, sort, parent)
+	list := newListing(r, entries, sort, opts)
 	if watchable {
 		list.watch(sort, state)
 	}

@@ -182,7 +182,16 @@ func serveZipEntry(w http.ResponseWriter, zFile *zip.File) {
 // replaced by writing a new one next to it and moving it over, and the
 // file the watch was put on is the one which just got unlinked.
 func indexFolderEntries(w http.ResponseWriter, r *http.Request, fsys fs.FS, name, reported, folder string) {
-	if err := view.Listing(w, r, filepath.Dir(reported), zipFolderReader(fsys, name, folder), folder != ""); err != nil {
+	// TODO: offer "?zip" and "?qr" here too - the handler does not answer
+	// them yet, and what is not answered is not linked. "qr" needs nothing
+	// but the branch, a code is drawn from the url alone. "zip" of a folder
+	// inside a zip copies header, crc and compressed bytes across through
+	// CreateRaw and OpenRaw instead of deflating twice. both go through
+	// path.Join(prefix, ...) like the entry lookup, or they reach outside
+	// the published window.
+	opts := view.ListOpts{Dir: filepath.Dir(reported), Parent: folder != ""}
+
+	if err := view.Listing(w, r, zipFolderReader(fsys, name, folder), opts); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(os.Stderr, "error: %q: %v\n", reported, err)
 	}

@@ -54,6 +54,13 @@ func DirListHandler(fsys http.FileSystem) http.Handler {
 			return
 		}
 
+		// "?zip" is asked of the folder itself, so it is answered before
+		// anything which decides what the folder looks like
+		if _, ok := r.URL.Query()[view.QueryZip]; ok {
+			zipFolder(w, r, fsys, name)
+			return
+		}
+
 		if index, err := fsys.Open(path.Join(name, indexPage)); err == nil {
 			index.Close()
 			files.ServeHTTP(w, r)
@@ -62,8 +69,16 @@ func DirListHandler(fsys http.FileSystem) http.Handler {
 
 		read := func() ([]view.ListEntry, string, error) { return readDir(fsys, name) }
 
+		// what the rows and the header of the listing may offer is what
+		// the lines above answer
+		opts := view.ListOpts{
+			Dir:    watchDir(fsys, name),
+			Parent: name != "/",
+			Zip:    true,
+		}
+
 		// the folder may be gone by now - it was opened above, not held
-		if err := view.Listing(w, r, watchDir(fsys, name), read, name != "/"); err != nil {
+		if err := view.Listing(w, r, read, opts); err != nil {
 			view.Status(w, statusForError(err))
 		}
 	})

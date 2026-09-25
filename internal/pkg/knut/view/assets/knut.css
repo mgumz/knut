@@ -217,12 +217,28 @@ table.listing {
 }
 
 .listing .size,
-.listing .date {
+.listing .date,
+.listing .actions {
 	text-align: right;
 }
 
 .listing .name a {
 	color: var(--file);
+}
+
+.listing th.actions {
+	font: inherit;
+}
+
+.listing .actions a {
+	margin-left: .6rem;
+	color: var(--muted);
+}
+
+.listing tr:hover .actions a,
+.listing .actions a:hover,
+.listing .actions a:focus {
+	color: var(--accent);
 }
 
 .listing .dir .name a {

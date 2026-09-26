@@ -91,6 +91,13 @@ func ZipFSHandler(name, prefix, index string) http.Handler {
 			r.URL.Path = "/" + r.URL.Path
 		}
 
+		// a file is as worth scanning as a folder, so "?qr" is answered
+		// before the two part ways
+		if r.URL.Query().Has(view.QueryQR) {
+			zipEntryQR(w, r, fsys, zipName, name, path.Join(prefix, r.URL.Path[1:]))
+			return
+		}
+
 		// a folder without an index is listed. that listing opens the zip
 		// on its own - it may be held as a live poll and must not sit on
 		// an open handle while it is, see indexFolderEntries.
@@ -133,6 +140,45 @@ func ZipFSHandler(name, prefix, index string) http.Handler {
 
 		view.Status(w, http.StatusNotFound)
 	})
+}
+
+// zipEntryQR answers "r" with the code of "entry" inside the zip at "name",
+// a 404 if the zip carries no such entry. "reported" is the zip as the
+// user spelled it, the one an error names.
+func zipEntryQR(w http.ResponseWriter, r *http.Request, fsys fs.FS, name, reported, entry string) {
+
+	z, file, err := openZip(fsys, name)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(os.Stderr, "error: %q: %v\n", reported, err)
+		return
+	}
+	defer file.Close()
+
+	if !zipHas(z, entry) {
+		view.Status(w, http.StatusNotFound)
+		return
+	}
+
+	view.QRImage(w, r)
+}
+
+// zipHas says whether "entry" is a file or a folder inside the zip. a
+// folder need not have an entry of its own, a name below it is enough, see
+// listFolderEntries. "" is the root of the zip, which is always there.
+func zipHas(zreader *zip.Reader, entry string) bool {
+
+	if entry == "" {
+		return true
+	}
+
+	for _, file := range zreader.File {
+		if file.Name == entry || strings.HasPrefix(file.Name, entry+"/") {
+			return true
+		}
+	}
+
+	return false
 }
 
 func serveZipEntry(w http.ResponseWriter, zFile *zip.File) {
@@ -182,14 +228,13 @@ func serveZipEntry(w http.ResponseWriter, zFile *zip.File) {
 // replaced by writing a new one next to it and moving it over, and the
 // file the watch was put on is the one which just got unlinked.
 func indexFolderEntries(w http.ResponseWriter, r *http.Request, fsys fs.FS, name, reported, folder string) {
-	// TODO: offer "?zip" and "?qr" here too - the handler does not answer
-	// them yet, and what is not answered is not linked. "qr" needs nothing
-	// but the branch, a code is drawn from the url alone. "zip" of a folder
-	// inside a zip copies header, crc and compressed bytes across through
-	// CreateRaw and OpenRaw instead of deflating twice. both go through
-	// path.Join(prefix, ...) like the entry lookup, or they reach outside
+	// TODO: offer "?zip" here too - the handler does not answer it yet,
+	// and what is not answered is not linked. "zip" of a folder inside a
+	// zip copies header, crc and compressed bytes across through CreateRaw
+	// and OpenRaw instead of deflating twice. it goes through
+	// path.Join(prefix, ...) like the entry lookup, or it reaches outside
 	// the published window.
-	opts := view.ListOpts{Dir: filepath.Dir(reported), Parent: folder != ""}
+	opts := view.ListOpts{Dir: filepath.Dir(reported), Parent: folder != "", QR: true}
 
 	if err := view.Listing(w, r, zipFolderReader(fsys, name, folder), opts); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

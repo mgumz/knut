@@ -60,18 +60,81 @@ func TestDirListHeaderOffersTheFolder(t *testing.T) {
 	}
 }
 
-// a listing of a zip offers neither: this handler answers no such query
-func TestZipFSListingOffersNothing(t *testing.T) {
+// a listing of a zip offers the codes, the file as well as the folder
+func TestZipFSListingOffersQR(t *testing.T) {
 
 	body := get(ZipFSHandler(testZip(t), "", ""), "/").Body.String()
 
-	for _, unwanted := range []string{`class="qr-link"`, `class="zip"`, `id="qr-modal"`} {
-		if strings.Contains(body, unwanted) {
-			t.Errorf("a listing of a zip renders %q", unwanted)
+	for _, want := range []string{
+		`<a class="qr-link" href="./"`,
+		`<a class="qr-link" href="a.txt"`,
+		`<a class="qr-link" href="sub/"`,
+		`<dialog id="qr-modal"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("a listing of a zip does not offer %q", want)
 		}
 	}
-	if !strings.Contains(body, `<th class="actions">`) {
-		t.Error("a listing of a zip lost the column itself")
+}
+
+// the code of an entry inside a zip is a png, same as on disk - with and
+// without a prefix narrowing what is published
+func TestZipFSQRImage(t *testing.T) {
+
+	for _, tc := range []struct {
+		prefix string
+		target string
+	}{
+		{"", "/?qr"},
+		{"", "/a.txt?qr"},
+		{"", "/sub/?qr"},
+		{"", "/sub/b.txt?qr"},
+		{"", "/empty/?qr"},
+		{"sub", "/?qr"},
+		{"sub", "/b.txt?qr"},
+	} {
+		rec := get(ZipFSHandler(testZip(t), tc.prefix, ""), tc.target)
+
+		if rec.Code != http.StatusOK {
+			t.Errorf("%q%q: got status %d, want %d", tc.prefix, tc.target, rec.Code, http.StatusOK)
+			continue
+		}
+		if got, want := rec.Header().Get("Content-Type"), "image/png"; got != want {
+			t.Errorf("%q%q: got content type %q, want %q", tc.prefix, tc.target, got, want)
+		}
+		if _, err := png.Decode(bytes.NewReader(rec.Body.Bytes())); err != nil {
+			t.Errorf("%q%q: decoding the code: %v", tc.prefix, tc.target, err)
+		}
+	}
+}
+
+// an entry the zip does not carry has no code - nor one outside the
+// prefix, or a name only sharing the start of an entry
+func TestZipFSQRImageMissing(t *testing.T) {
+
+	for _, tc := range []struct {
+		prefix string
+		target string
+	}{
+		{"", "/nope.txt?qr"},
+		{"", "/su?qr"},
+		{"sub", "/a.txt?qr"},
+	} {
+		rec := get(ZipFSHandler(testZip(t), tc.prefix, ""), tc.target)
+
+		if rec.Code != http.StatusNotFound {
+			t.Errorf("%q%q: got status %d, want %d", tc.prefix, tc.target, rec.Code, http.StatusNotFound)
+		}
+	}
+}
+
+// a zip read on the machine knut runs on has no code to hand anybody
+func TestZipFSQRImageOnLoopback(t *testing.T) {
+
+	rec := getFrom(ZipFSHandler(testZip(t), "", ""), "/a.txt?qr", "localhost:8080")
+
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("got status %d, want %d", rec.Code, http.StatusNotFound)
 	}
 }
 

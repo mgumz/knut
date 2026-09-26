@@ -248,14 +248,11 @@ func TestDirZipPastIndexPage(t *testing.T) {
 	}
 }
 
-// a listing of a zip has no folder to hand out, only entries inside one
-func TestZipFSListingHasNoZipLinks(t *testing.T) {
+// a folder inside a zip is listed like one on disk
+func TestZipFSListingFolderSize(t *testing.T) {
 
 	body := get(ZipFSHandler(testZip(t), "", ""), "/").Body.String()
 
-	if strings.Contains(body, `class="zip"`) {
-		t.Error("a listing of a zip must not offer folders as downloads")
-	}
 	if !strings.Contains(body, `<td class="size">-</td>`) {
 		t.Error("a folder inside a zip renders no size")
 	}

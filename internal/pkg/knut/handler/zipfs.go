@@ -98,6 +98,14 @@ func ZipFSHandler(name, prefix, index string) http.Handler {
 			return
 		}
 
+		// "?zip" is asked of the folder itself, so it is answered before
+		// anything which decides what the folder looks like. a file asked
+		// for it is served as it is, like on disk.
+		if r.URL.Query().Has(view.QueryZip) && strings.HasSuffix(r.URL.Path, "/") {
+			zipFSFolder(w, r, fsys, zipName, name, path.Join(prefix, r.URL.Path[1:]))
+			return
+		}
+
 		// a folder without an index is listed. that listing opens the zip
 		// on its own - it may be held as a live poll and must not sit on
 		// an open handle while it is, see indexFolderEntries.
@@ -228,13 +236,7 @@ func serveZipEntry(w http.ResponseWriter, zFile *zip.File) {
 // replaced by writing a new one next to it and moving it over, and the
 // file the watch was put on is the one which just got unlinked.
 func indexFolderEntries(w http.ResponseWriter, r *http.Request, fsys fs.FS, name, reported, folder string) {
-	// TODO: offer "?zip" here too - the handler does not answer it yet,
-	// and what is not answered is not linked. "zip" of a folder inside a
-	// zip copies header, crc and compressed bytes across through CreateRaw
-	// and OpenRaw instead of deflating twice. it goes through
-	// path.Join(prefix, ...) like the entry lookup, or it reaches outside
-	// the published window.
-	opts := view.ListOpts{Dir: filepath.Dir(reported), Parent: folder != "", QR: true}
+	opts := view.ListOpts{Dir: filepath.Dir(reported), Parent: folder != "", Zip: true, QR: true}
 
 	if err := view.Listing(w, r, zipFolderReader(fsys, name, folder), opts); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

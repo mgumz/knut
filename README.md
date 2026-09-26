@@ -142,6 +142,9 @@ for every entry, `zip` only for a folder.
   folder does not matter
 * the files are deflated at the cheapest level, the folder entries stored
 * empty folders travel along, symlinks, sockets and devices do not
+* a folder inside a `zipfs://` mapping is copied out of that zip as it is
+  stored: nothing is unpacked or packed again. entries whose names reach
+  outside the folder are left out
 * the name is the folder and the moment it was asked for:
   `sub-2026-09-19T15-04.zip`
 * the URI is the folder plus `?zip`, so it can be fetched without the page:

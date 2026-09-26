@@ -111,6 +111,12 @@ func Template(name string) *template.Template {
 	return tmpl.Lookup(layoutTmpl)
 }
 
+// Block is the block "name" of assets/knut.html alone, without the layout
+// around it: a piece htmx puts into a page which is already on screen.
+func Block(name string) *template.Template {
+	return Template(name).Lookup(contentTmpl)
+}
+
 // Render renders "data" into a buffer. rendering upfront keeps a
 // template error from ending up as a half written response.
 func Render(tmpl *template.Template, data any) ([]byte, error) {

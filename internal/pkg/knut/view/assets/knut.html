@@ -146,13 +146,16 @@ be parsed and thrown away.
 {{- end }}
 {{ end }}
 
-{{/* git: .Clone, .Refs, .Commits, .Summary, .Watch */}}
+{{/* git: .Clone, .Refs, .Commits, .Newer, .Latest, .Summary, .LogCount, .Watch */}}
 {{ define "git" -}}
-<div id="repo"{{ with .Watch }} hx-get="{{ . }}" hx-trigger="load" hx-select="#repo" hx-swap="outerHTML"{{ end }}>
+<div id="repo"{{ with .Watch }} hx-get="{{ . }}" hx-trigger="load" hx-select="#repo" hx-swap="outerHTML" hx-on::before-swap="if (event.detail.target === this && this.querySelector('tr.older')) { event.detail.shouldSwap = false; htmx.find('#git-moved').hidden = false }"{{ end }}>
+{{ if .Watch -}}
+<p id="git-moved" class="meta" hidden>the repository changed - <a href="">reload</a></p>
+{{ end -}}
 {{ with .Clone -}}
 <pre class="clone"><code>git clone {{ . }}</code></pre>
 {{ end -}}
-{{ if not .Commits -}}
+{{ if and (not .Refs) (not .Commits) -}}
 <p>no commits yet.</p>
 {{ else -}}
 <table class="listing refs">
@@ -178,19 +181,39 @@ be parsed and thrown away.
     <tr><th class="name">log</th><th class="type">author</th><th class="type">commit</th><th class="date">date</th></tr>
   </thead>
   <tbody>
+{{- with .Newer }}
+    <tr class="newer"><td class="pager" colspan="4">{{ with $.Latest }}<a href="{{ . }}">latest</a> ι {{ end }}<a href="{{ . }}">newer&nbsp;commits</a></td></tr>
+{{- end }}
+{{- template "git-log-rows" . }}
+  </tbody>
+</table>
+{{ end -}}
+<p class="meta summary">{{ .Summary }} ι <span id="git-log-count">{{ .LogCount }}</span></p>
+</div>
+{{ end }}
+
+{{/*
+git-log-rows: .Commits, .More, .Older, .LogCount
+
+a batch htmx adds to the log starts with a row: htmx reads such an answer
+in the context of a table, and anything in front of the rows would end it.
+so the count it swaps out of band comes after them.
+*/}}
+{{ define "git-log-rows" -}}
 {{- range .Commits }}
-    <tr>
+    <tr{{ if $.Older }} class="older"{{ end }}>
       <td class="name" title="{{ .Subject }}">{{ .Subject }}</td>
       <td class="type">{{ .Author }}</td>
       <td class="type"><code>{{ .Hash }}</code></td>
       <td class="date"><time datetime="{{ .ISO }}">{{ .Date }}</time></td>
     </tr>
 {{- end }}
-  </tbody>
-</table>
-{{ end -}}
-<p class="meta summary">{{ .Summary }}</p>
-</div>
+{{- with .More }}
+    <tr class="more" hx-get="{{ .Batch }}" hx-trigger="revealed" hx-swap="outerHTML" hx-select="unset"><td class="pager" colspan="4"><a href="{{ .Page }}">older&nbsp;commits</a></td></tr>
+{{- end }}
+{{- if .Older }}
+<span id="git-log-count" hx-swap-oob="true">{{ .LogCount }}</span>
+{{- end }}
 {{ end }}
 
 {{/* git-list: .Repos, .Parent, .Summary, .Watch */}}

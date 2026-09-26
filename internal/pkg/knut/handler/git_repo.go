@@ -8,32 +8,57 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/mgumz/knut/internal/pkg/knut/view"
 )
 
-// gitShown is how many commits, and how many refs, the page of a
-// repository shows: the latest ones, the rest is what a clone is for.
+// gitShown is how many refs the page of a repository shows, and how many
+// commits it shows at a time: the latest ones, the rest is what a clone -
+// or the next batch of the log - is for.
 const gitShown = 50
 
-// gitRefParam names the ref a "?zip" of a repository is taken of. without
-// it the zip is of HEAD.
-const gitRefParam = "ref"
+const (
+	// gitRefParam names the ref a "?zip" of a repository is taken of.
+	// without it the zip is of HEAD.
+	gitRefParam = "ref"
 
-var gitRepoTmpl = view.Template("git")
+	// the log of a page goes on at "?from=<commit>&skip=<n>": the commits
+	// "from" reaches, the first "skip" left out. "from" is pinned to the
+	// commit the page started at, so a commit landing in between does
+	// not shift what "skip" leaves out.
+	gitFromParam = "from"
+	gitSkipParam = "skip"
 
-// gitRepo is the page of a repository.
+	// "?log" asks for that part of the log alone, as rows to add to the
+	// table on screen, see gitLogBatch.
+	gitLogParam = "log"
+)
+
+var (
+	gitRepoTmpl    = view.Template("git")
+	gitLogRowsTmpl = view.Block("git-log-rows")
+)
+
+// gitRepo is the page of a repository, or the part of its log htmx adds to
+// it.
 type gitRepo struct {
 	view.Page
-	Clone   string // the url to hand "git clone"
-	Refs    []gitRef
-	Commits []gitCommit
-	Summary string
-	Watch   string // url a live page polls, empty when it does not
+	Clone    string // the url to hand "git clone"
+	Refs     []gitRef
+	Commits  []gitCommit
+	More     *gitMore // where the log goes on, nil where it ends
+	Newer    string   // the part of the log before this one, see gitLogNewer
+	Latest   string   // the start of the log, where that is not Newer
+	Older    bool     // the commits are added to a log already on screen
+	Summary  string
+	LogCount string // how much of the log is on screen
+	Watch    string // url a live page polls, empty when it does not
 }
 
 // gitRef is a branch or a tag, and the commit it points at.
@@ -49,20 +74,52 @@ type gitRef struct {
 // gitCommit is one line of the log.
 type gitCommit struct {
 	Hash    string
+	Full    string // the hash in full, what a page of the log is pinned to
 	Date    string
 	ISO     string
 	Author  string
 	Subject string
 }
 
-// gitRepoPage answers "r" with the page of the repository "gitDir".
+// gitMore is where the log goes on: the next batch as rows for htmx, and
+// as a page of its own for a browser without it.
+type gitMore struct {
+	Batch string
+	Page  string
+}
+
+// gitRepoPage answers "r" with the page of the repository "gitDir", or the
+// part of its log the query asks for.
+//
+// the first page follows the repository under -live. a later one - the
+// log from "?skip" on - is history: it renders once.
 func gitRepoPage(w http.ResponseWriter, r *http.Request, gitBinary, gitDir string) {
 
+	from, skip, ok := gitLogWindow(r, gitBinary, gitDir)
+	if !ok {
+		view.Status(w, http.StatusNotFound)
+		return
+	}
+
+	if r.URL.Query().Has(gitLogParam) {
+		gitLogBatch(w, r, gitBinary, gitDir, from, skip)
+		return
+	}
+
 	ctx := r.Context()
-	read := func() (gitRepo, string, error) { return readGitRepo(ctx, gitBinary, gitDir) }
+	read := func() (gitRepo, string, error) { return readGitRepo(ctx, gitBinary, gitDir, from, skip) }
 	dirs := func() []string { return gitWatchDirs(ctx, gitBinary, gitDir) }
 
-	repo, watch, err := view.Poll(r, dirs, read)
+	var (
+		repo  gitRepo
+		watch string
+		err   error
+	)
+	if skip == 0 {
+		repo, watch, err = view.Poll(r, dirs, read)
+	} else {
+		repo, _, err = read()
+	}
 	if err != nil {
 		view.Status(w, http.StatusInternalServerError)
 		fmt.Fprintf(os.Stderr, "error: %q: %v\n", gitDir, err)
@@ -72,13 +129,71 @@ func gitRepoPage(w http.ResponseWriter, r *http.Request, gitBinary, gitDir strin
 	repo.Page = view.PageFor(r, view.RequestPath(r))
 	repo.Clone = view.AbsoluteURL(r)
 	repo.Watch = watch
+	repo.Newer, repo.Latest = gitLogNewer(from, skip)
 
 	view.WriteFor(w, r, gitRepoTmpl, repo)
 }
 
+// gitLogWindow reads which part of the log "r" asks for. no "?skip" is the
+// start of it, from HEAD. a "?skip" needs a "?from" naming a commit - it
+// is the hash that commit resolves to which is handed on, never the query
+// as it came. anything else is not ok.
+func gitLogWindow(r *http.Request, gitBinary, gitDir string) (string, int, bool) {
+
+	query := r.URL.Query()
+	if !query.Has(gitSkipParam) {
+		return "", 0, true
+	}
+
+	skip, err := strconv.Atoi(query.Get(gitSkipParam))
+	if err != nil || skip < 0 {
+		return "", 0, false
+	}
+	if skip == 0 {
+		return "", 0, true
+	}
+
+	from, ok := gitCommitOf(r.Context(), gitBinary, gitDir, query.Get(gitFromParam))
+
+	return from, skip, ok
+}
+
+// gitCommitOf resolves "ref" to the hash of the commit it names.
+func gitCommitOf(ctx context.Context, gitBinary, gitDir, ref string) (string, bool) {
+
+	out, err := runGit(ctx, gitBinary, gitDir,
+		"rev-parse", "--verify", "--quiet", "--end-of-options", ref+"^{commit}")
+	commit := strings.TrimSpace(string(out))
+
+	return commit, err == nil && commit != ""
+}
+
+// gitLogBatch answers "r" with the commits from "skip" on as rows, for
+// htmx to add below the ones on screen: the row which asked for them is
+// replaced, and the last of the new ones asks for the next batch in turn.
+//
+// the count below the log is sent along out of band. it comes after the
+// rows - htmx reads an answer in the context of a table the moment it
+// starts with a row, and a row is what it has to start with.
+func gitLogBatch(w http.ResponseWriter, r *http.Request, gitBinary, gitDir, from string, skip int) {
+
+	commits, _, err := readGitLog(r.Context(), gitBinary, gitDir, from, skip)
+	if err != nil {
+		view.Status(w, http.StatusInternalServerError)
+		fmt.Fprintf(os.Stderr, "error: %q: %v\n", gitDir, err)
+		return
+	}
+
+	rows := gitRepo{Commits: commits, Older: true}
+	rows.More = gitLogMore(commits, from, skip)
+	rows.LogCount = gitLogCount(0, skip+len(commits), rows.More != nil)
+
+	view.Write(w, gitLogRowsTmpl, rows)
+}
+
 // readGitRepo reads what the page of a repository shows, and the state of
 // it. the refs are read whole for the state and cut down for the page.
-func readGitRepo(ctx context.Context, gitBinary, gitDir string) (gitRepo, string, error) {
+func readGitRepo(ctx context.Context, gitBinary, gitDir, from string, skip int) (gitRepo, string, error) {
 
 	refsOut, err := runGit(ctx, gitBinary, gitDir, "for-each-ref", "--sort=-creatordate",
 		"--format=%(HEAD)%00%(refname)%00%(refname:short)%00"+
@@ -89,19 +204,80 @@ func readGitRepo(ctx context.Context, gitBinary, gitDir string) (gitRepo, string
 		return gitRepo{}, "", err
 	}
 
-	// a repository without any commit has an empty log, not a broken one
-	logOut, err := runGit(ctx, gitBinary, gitDir, "log", fmt.Sprintf("-n%d", gitShown),
-		"--format=%h%x00%aI%x00%an%x00%s", "--ignore-missing", "HEAD")
+	commits, logOut, err := readGitLog(ctx, gitBinary, gitDir, from, skip)
 	if err != nil {
 		return gitRepo{}, "", err
 	}
 
 	refLines := gitLines(refsOut)
-	repo := gitRepo{Refs: parseGitRefs(refLines[:min(len(refLines), gitShown)])}
-	repo.Commits = parseGitLog(gitLines(logOut))
-	repo.Summary = gitRepoSummary(len(repo.Refs), len(refLines), len(repo.Commits))
+	repo := gitRepo{Refs: parseGitRefs(refLines[:min(len(refLines), gitShown)]), Commits: commits}
+	repo.More = gitLogMore(commits, from, skip)
+	repo.Summary = gitRefSummary(len(repo.Refs), len(refLines))
+	repo.LogCount = gitLogCount(skip, len(commits), repo.More != nil)
 
 	return repo, gitState(refsOut, logOut), nil
+}
+
+// readGitLog reads one batch of the log: the commits "from" reaches, or
+// HEAD without it, the first "skip" left out. a repository without any
+// commit has an empty log, not a broken one.
+func readGitLog(ctx context.Context, gitBinary, gitDir, from string, skip int) ([]gitCommit, []byte, error) {
+
+	args := []string{"log", fmt.Sprintf("-n%d", gitShown), fmt.Sprintf("--skip=%d", skip),
+		"--format=%h%x00%H%x00%aI%x00%an%x00%s"}
+	if from == "" {
+		args = append(args, "--ignore-missing", "HEAD")
+	} else {
+		args = append(args, from)
+	}
+
+	out, err := runGit(ctx, gitBinary, gitDir, args...)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return parseGitLog(gitLines(out)), out, nil
+}
+
+// gitLogMore says where the log goes on after "commits", or nil where a
+// batch came back short of full - that one was the end of it.
+func gitLogMore(commits []gitCommit, from string, skip int) *gitMore {
+
+	if len(commits) < gitShown {
+		return nil
+	}
+	if from == "" {
+		from = commits[0].Full
+	}
+
+	query := url.Values{
+		gitFromParam: {from},
+		gitSkipParam: {strconv.Itoa(skip + len(commits))},
+	}.Encode()
+
+	return &gitMore{Batch: "?" + gitLogParam + "&" + query, Page: "?" + query}
+}
+
+// gitLogNewer says where a later part of the log - the page "?skip" asks
+// for - leads back to: the part before it, pinned like it, and the start
+// of the log. the start is the first page, which follows HEAD and so shows
+// what landed since the pin; one step back from the second part is the
+// start already, and then there is no second link to it.
+func gitLogNewer(from string, skip int) (string, string) {
+
+	switch {
+	case skip == 0:
+		return "", ""
+	case skip <= gitShown:
+		return "./", ""
+	}
+
+	query := url.Values{
+		gitFromParam: {from},
+		gitSkipParam: {strconv.Itoa(skip - gitShown)},
+	}.Encode()
+
+	return "?" + query, "./"
 }
 
 // parseGitRefs reads the lines "for-each-ref" printed. a tag is shown at
@@ -135,33 +311,41 @@ func parseGitLog(lines []string) []gitCommit {
 	for _, line := range lines {
 
 		fields := strings.Split(line, "\x00")
-		if len(fields) != 4 {
+		if len(fields) != 5 {
 			continue
 		}
 
-		commit := gitCommit{Hash: fields[0], Author: fields[2], Subject: fields[3]}
-		commit.Date, commit.ISO = gitDate(fields[1])
+		commit := gitCommit{Hash: fields[0], Full: fields[1], Author: fields[3], Subject: fields[4]}
+		commit.Date, commit.ISO = gitDate(fields[2])
 		commits = append(commits, commit)
 	}
 
 	return commits
 }
 
-// gitRepoSummary counts what the page shows, and says where it left out
-// some. the log is read no further than it is shown, so a full one does
-// not know how long it goes on.
-func gitRepoSummary(shown, refs, commits int) string {
+// gitRefSummary counts the refs, and says where the page left out some.
+func gitRefSummary(shown, refs int) string {
 
-	summary := view.Plural(refs, "ref")
 	if shown < refs {
-		summary = fmt.Sprintf("%d of %s", shown, summary)
+		return fmt.Sprintf("%d of %s", shown, view.Plural(refs, "ref"))
 	}
 
-	if commits < gitShown {
-		return summary + " ι " + view.Plural(commits, "commit")
+	return view.Plural(refs, "ref")
+}
+
+// gitLogCount says how much of the log is on screen: "count" commits after
+// the first "skip". the log is read no further than it is shown, so where
+// it goes on it is not known how long it is.
+func gitLogCount(skip, count int, more bool) string {
+
+	switch {
+	case skip > 0:
+		return fmt.Sprintf("commits %d-%d", skip+1, skip+count)
+	case more:
+		return fmt.Sprintf("the latest %d commits", count)
 	}
 
-	return summary + fmt.Sprintf(" ι the latest %d commits", gitShown)
+	return view.Plural(count, "commit")
 }
 
 // gitWatchDirs names the folders a commit, a push, a new branch or a tag
@@ -213,10 +397,8 @@ func gitArchive(w http.ResponseWriter, r *http.Request, gitBinary, gitDir string
 		ref = "HEAD"
 	}
 
-	out, err := runGit(r.Context(), gitBinary, gitDir,
-		"rev-parse", "--verify", "--quiet", "--end-of-options", ref+"^{commit}")
-	commit := strings.TrimSpace(string(out))
-	if err != nil || commit == "" {
+	commit, ok := gitCommitOf(r.Context(), gitBinary, gitDir, ref)
+	if !ok {
 		view.Status(w, http.StatusNotFound)
 		return
 	}

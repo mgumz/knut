@@ -431,6 +431,10 @@ table.listing + table.listing {
 	margin-top: 2rem;
 }
 
+.listing .pager {
+	text-align: right;
+}
+
 /* status pages */
 
 .status .code {

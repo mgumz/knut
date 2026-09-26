@@ -171,7 +171,9 @@ browser:
     $> git clone http://host:8080/g/knut/
 
 * the page lists the `git clone` command, the branches and tags, and the
-  latest 50 commits of `HEAD`
+  log of `HEAD`, 50 commits at a time: with `-live` the next 50 load when
+  the end of the log scrolls into view, without it an "older commits" link
+  pages through, and "newer commits" and "latest" page back
 * git clients ask for fixed paths below the repository (`info/refs`,
   `git-upload-pack`, `objects/...`); those go to `git http-backend`,
   everything else gets the page

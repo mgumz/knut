@@ -4,6 +4,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"os/exec"
@@ -106,7 +107,7 @@ func TestGitSummary(t *testing.T) {
 		`>first</td>`,
 		`second &lt;b&gt;bold&lt;/b&gt;`,
 		`2026-09-19 15:04`,
-		`3 refs ι 2 commits`,
+		`3 refs ι <span id="git-log-count">2 commits</span>`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("the page does not carry %q", want)
@@ -470,6 +471,218 @@ func TestGitNotLive(t *testing.T) {
 	for _, page := range []string{"/one/", "/"} {
 		if body := get(handler, page).Body.String(); gitLiveURL.MatchString(body) {
 			t.Errorf("%q: the page polls without -live", page)
+		}
+	}
+}
+
+// gitLong adds commits to "one" until its log is 120 long: two batches and
+// a short third one. it returns the full hash of HEAD.
+func gitLong(t *testing.T, root string) string {
+	t.Helper()
+
+	one := filepath.Join(root, "one")
+	for i := 3; i <= 120; i++ {
+		gitIn(t, one, "commit", "-q", "--allow-empty", "-m", fmt.Sprintf("c%03d", i))
+	}
+
+	head, err := exec.Command("git", "-C", one, "rev-parse", "HEAD").Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return strings.TrimSpace(string(head))
+}
+
+// the first 50 commits come with the page, and the row after them asks for
+// the next ones - pinned to the commit the page started at
+func TestGitLogFirstBatch(t *testing.T) {
+
+	root := testRepos(t)
+	head := gitLong(t, root)
+
+	body := get(GitHandler(root, "/"), "/one/").Body.String()
+
+	if got := strings.Count(body, `<td class="name" title="c`); got != 50 {
+		t.Errorf("the page shows %d commits, want 50", got)
+	}
+	for _, want := range []string{
+		`hx-get="?log&amp;from=` + head + `&amp;skip=50"`,
+		`hx-trigger="revealed"`,
+		`hx-select="unset"`,
+		`<a href="?from=` + head + `&amp;skip=50">older&nbsp;commits</a>`,
+		`<span id="git-log-count">the latest 50 commits</span>`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("the page does not carry %q", want)
+		}
+	}
+}
+
+// a batch is rows alone, for htmx to add to the table on screen: the count
+// comes along out of band, after them, and the last batch asks for no more
+func TestGitLogBatches(t *testing.T) {
+
+	root := testRepos(t)
+	head := gitLong(t, root)
+	handler := GitHandler(root, "/")
+
+	body := getHX(handler, "/one/?log&from="+head+"&skip=50").Body.String()
+
+	if strings.Contains(body, "<!doctype html>") || strings.Contains(body, `id="repo"`) {
+		t.Error("a batch comes with a page around it")
+	}
+	if !strings.HasPrefix(strings.TrimSpace(body), "<tr") {
+		t.Error("a batch does not start with a row")
+	}
+	if got := strings.Count(body, `<tr class="older">`); got != 50 {
+		t.Errorf("the batch carries %d commits, want 50", got)
+	}
+	for _, want := range []string{
+		`<td class="name" title="c070">`,
+		`hx-get="?log&amp;from=` + head + `&amp;skip=100"`,
+		`<span id="git-log-count" hx-swap-oob="true">the latest 100 commits</span>`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("the batch does not carry %q", want)
+		}
+	}
+	if strings.Index(body, `hx-swap-oob`) < strings.LastIndex(body, "<tr") {
+		t.Error("the count comes before the rows")
+	}
+
+	body = getHX(handler, "/one/?log&from="+head+"&skip=100").Body.String()
+	if got := strings.Count(body, `<tr class="older">`); got != 20 {
+		t.Errorf("the last batch carries %d commits, want 20", got)
+	}
+	if strings.Contains(body, `class="more"`) {
+		t.Error("the last batch asks for more")
+	}
+	if !strings.Contains(body, `hx-swap-oob="true">120 commits</span>`) {
+		t.Error("the last batch does not count the whole log")
+	}
+}
+
+// a commit landing while the log is read does not shift the next batch
+func TestGitLogBatchIsPinned(t *testing.T) {
+
+	root := testRepos(t)
+	head := gitLong(t, root)
+	handler := GitHandler(root, "/")
+
+	before := getHX(handler, "/one/?log&from="+head+"&skip=50").Body.String()
+	gitIn(t, filepath.Join(root, "one"), "commit", "-q", "--allow-empty", "-m", "late")
+	after := getHX(handler, "/one/?log&from="+head+"&skip=50").Body.String()
+
+	if before != after {
+		t.Error("a new commit shifted the batch")
+	}
+}
+
+// without htmx the row is a link to a page of its own: the refs, and the
+// next part of the log. that page is history, it does not poll
+func TestGitLogOlderPage(t *testing.T) {
+
+	liveMode(t)
+
+	root := testRepos(t)
+	head := gitLong(t, root)
+
+	body := get(GitHandler(root, "/"), "/one/?from="+head+"&skip=50").Body.String()
+
+	for _, want := range []string{
+		"<!doctype html>",
+		`<td class="name">v1.0</td>`,
+		`<td class="name" title="c070">`,
+		`<span id="git-log-count">commits 51-100</span>`,
+		`<a href="?from=` + head + `&amp;skip=100">older&nbsp;commits</a>`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("the older page does not carry %q", want)
+		}
+	}
+	if strings.Contains(body, `title="c120"`) {
+		t.Error("the older page shows the latest commits")
+	}
+	if gitLiveURL.MatchString(body) {
+		t.Error("the older page polls")
+	}
+}
+
+// a part of the log is asked for by a commit and a number: anything else
+// is not a part of it
+func TestGitLogWindowRefused(t *testing.T) {
+
+	root := testRepos(t)
+	head := gitLong(t, root)
+	handler := GitHandler(root, "/")
+	out := filepath.Join(root, "out")
+
+	for _, target := range []string{
+		"/one/?skip=-1&from=" + head,
+		"/one/?skip=many&from=" + head,
+		"/one/?skip=50",
+		"/one/?skip=50&from=nope",
+		"/one/?skip=50&from=--output=" + out,
+		"/one/?log&skip=50&from=nope",
+	} {
+		if rec := get(handler, target); rec.Code != http.StatusNotFound {
+			t.Errorf("%q: got status %d, want %d", target, rec.Code, http.StatusNotFound)
+		}
+	}
+	if exists(out) {
+		t.Error("a query was taken for an option")
+	}
+}
+
+// a live page which has grown by batches is not swapped for a fresh one -
+// that would drop what was scrolled into view - it says it moved instead
+func TestGitLiveKeepsScrolledLog(t *testing.T) {
+
+	liveMode(t)
+
+	body := get(GitHandler(testRepos(t), "/"), "/one/").Body.String()
+
+	for _, want := range []string{
+		`hx-on::before-swap="if (event.detail.target === this && this.querySelector('tr.older'))`,
+		`<p id="git-moved" class="meta" hidden>`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("the live page does not carry %q", want)
+		}
+	}
+}
+
+// an older part of the log leads back: one part up, and - from the third
+// part on - to the start, which follows HEAD. the first part has neither
+func TestGitLogNewer(t *testing.T) {
+
+	root := testRepos(t)
+	head := gitLong(t, root)
+	handler := GitHandler(root, "/")
+
+	for target, want := range map[string][]string{
+		"/one/": nil,
+		"/one/?from=" + head + "&skip=50": {
+			`<tr class="newer"><td class="pager" colspan="4"><a href="./">newer&nbsp;commits</a></td></tr>`,
+		},
+		"/one/?from=" + head + "&skip=100": {
+			`<a href="./">latest</a> ι <a href="?from=` + head + `&amp;skip=50">newer&nbsp;commits</a>`,
+		},
+	} {
+		body := get(handler, target).Body.String()
+
+		if want == nil {
+			if strings.Contains(body, `class="newer"`) {
+				t.Errorf("%q: the start of the log leads to newer commits", target)
+			}
+			continue
+		}
+		for _, w := range want {
+			if !strings.Contains(body, w) {
+				t.Errorf("%q: the page does not carry %q", target, w)
+			}
+		}
+		if strings.Index(body, `class="newer"`) > strings.Index(body, `<td class="name" title="c`) {
+			t.Errorf("%q: the way to newer commits comes after the log", target)
 		}
 	}
 }

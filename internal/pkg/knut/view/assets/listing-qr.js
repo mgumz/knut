@@ -14,8 +14,8 @@
 
 	// the link is the entry itself, the code of it is that same uri with
 	// "?qr" on the end - drawn by the server, asked for once it is shown
-	function open(link) {
-		var url = new URL(link.getAttribute("href"), location.href).href;
+	function open(href) {
+		var url = new URL(href, location.href).href;
 
 		image.src = url + "?qr";
 		image.alt = caption.textContent = url;
@@ -28,8 +28,19 @@
 			return;
 		}
 		event.preventDefault();
-		open(link);
+		open(link.getAttribute("href"));
 	});
+
+	// the code in the page header stands for the folder, as the "qr" in the
+	// header of the listing does - but a bare folder has no listing header,
+	// and a live one may fill up any moment, so it does not ask that link
+	var code = document.querySelector("header img.qr");
+	if (code) {
+		code.classList.add("qr-open");
+		code.addEventListener("click", function () {
+			open("./");
+		});
+	}
 
 	dialog.addEventListener("click", function (event) {
 		if (event.target === dialog) {

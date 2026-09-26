@@ -135,6 +135,10 @@ header div {
 	height: 4rem;
 }
 
+.qr-open {
+	cursor: zoom-in;
+}
+
 /* knut is not answering: the bar stays until a knock gets through */
 
 #gone {

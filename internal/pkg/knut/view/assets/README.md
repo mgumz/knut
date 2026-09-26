@@ -143,5 +143,9 @@ The script turns the link into a dialog on top of the listing:
 - the caption is the url the code carries, the link resolved against the
   page, and the image is that same url plus `?qr`
 
+The code in the page header opens the dialog of the folder, `./`, as the
+`qr` in the header of the listing does. It does not go through that link: a
+bare folder renders no table, so there is none to click.
+
 Without the script the link is followed, which fetches the entry: a second
 way to the file, not a code.

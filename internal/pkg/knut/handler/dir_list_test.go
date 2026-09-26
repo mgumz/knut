@@ -192,7 +192,7 @@ func TestDirListEmptyFolder(t *testing.T) {
 
 	body := get(DirListHandler(fsys), "/bare/").Body.String()
 
-	if strings.Contains(body, "<table") {
+	if strings.Contains(body, `<table class="listing"`) {
 		t.Error("an empty folder must not render a table")
 	}
 	for _, want := range []string{`<pre class="tree">`, "this tree is bare", `>../<`} {

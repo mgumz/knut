@@ -167,7 +167,7 @@ func schemeHandler(treeURL *url.URL, window string) (http.Handler, bool) {
 		return kh.SetContentType(handler, "application/x-gtar"), false
 	case "zip":
 		prefix := query.Get("prefix")
-		store := knut.HasQueryParam("store", query)
+		store := query.Has("store")
 		handler := kh.ZipHandler(knut.LocalFilename(treeURL), prefix, store)
 		return kh.SetContentType(handler, "application/zip"), false
 	case "zipfs":

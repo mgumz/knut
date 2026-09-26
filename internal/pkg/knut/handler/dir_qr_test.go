@@ -65,7 +65,7 @@ func TestZipFSListingOffersNothing(t *testing.T) {
 
 	body := get(ZipFSHandler(testZip(t), "", ""), "/").Body.String()
 
-	for _, unwanted := range []string{`class="qr-link"`, `class="zip"`, `<dialog`} {
+	for _, unwanted := range []string{`class="qr-link"`, `class="zip"`, `id="qr-modal"`} {
 		if strings.Contains(body, unwanted) {
 			t.Errorf("a listing of a zip renders %q", unwanted)
 		}

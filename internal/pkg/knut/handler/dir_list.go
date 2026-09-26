@@ -43,7 +43,7 @@ func DirListHandler(fsys http.FileSystem) http.Handler {
 
 		// a file is as worth scanning as a folder, so "?qr" is answered
 		// before the two part ways
-		if _, ok := r.URL.Query()[view.QueryQR]; ok {
+		if r.URL.Query().Has(view.QueryQR) {
 			view.QRImage(w, r)
 			return
 		}
@@ -63,7 +63,7 @@ func DirListHandler(fsys http.FileSystem) http.Handler {
 
 		// "?zip" is asked of the folder itself, so it is answered before
 		// anything which decides what the folder looks like
-		if _, ok := r.URL.Query()[view.QueryZip]; ok {
+		if r.URL.Query().Has(view.QueryZip) {
 			zipFolder(w, r, fsys, name)
 			return
 		}

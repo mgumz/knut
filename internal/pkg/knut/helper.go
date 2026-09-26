@@ -46,8 +46,3 @@ func GetWindowAndTree(arg string) (window, tree string, err error) {
 func LocalFilename(fileURL *url.URL) string {
 	return filepath.Join(fileURL.Host, fileURL.Path)
 }
-
-func HasQueryParam(key string, vals url.Values) bool {
-	_, exists := vals[key]
-	return exists
-}

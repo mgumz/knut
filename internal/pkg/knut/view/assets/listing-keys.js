@@ -119,8 +119,20 @@
 			// twice
 			event.preventDefault();
 			follow();
+		} else if (event.key === "?" && help && help.showModal) {
+			event.preventDefault();
+			help.showModal();
 		}
 	});
+
+	var help = document.getElementById("keys-modal");
+	if (help) {
+		help.addEventListener("click", function (event) {
+			if (event.target === help) {
+				help.close();
+			}
+		});
+	}
 
 	var box = document.getElementById("filter");
 	if (box) {

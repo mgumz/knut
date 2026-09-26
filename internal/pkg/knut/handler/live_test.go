@@ -150,7 +150,7 @@ func TestLiveEmptyFolderIsArmed(t *testing.T) {
 
 	body := get(DirListHandler(http.Dir(t.TempDir())), "/").Body.String()
 
-	if strings.Contains(body, "<table") {
+	if strings.Contains(body, `<table class="listing"`) {
 		t.Fatal("an empty folder must not render a table")
 	}
 	if !strings.Contains(body, `<div id="listing" hx-get=`) {

@@ -85,7 +85,12 @@ a term which matched nothing.
 ## listing-keys.js
 
 Walks the rows of a listing from the keyboard. Which key does what is the
-`keydown` handler in the file itself.
+`keydown` handler in the file itself, and in `listing-filter.js` for `/`
+and `Escape`.
+
+`?` opens `#keys-modal`, a table of those keys. The table is written by
+hand in `knut.html`, so a key added to either handler has to be added
+there too.
 
 - the bar is a `selected` class on a `<tr>`, drawn as a solid block of the
   accent colour. a pointer passing over a row only tints it, so the two do

@@ -85,6 +85,18 @@ be parsed and thrown away.
   <p id="qr-caption" class="meta"></p>
 </dialog>
 {{ end }}
+<dialog id="keys-modal" class="keys-modal">
+  <table class="keys">
+    <tbody>
+      <tr><td><kbd>j</kbd> <kbd>↓</kbd></td><td>next row</td></tr>
+      <tr><td><kbd>k</kbd> <kbd>↑</kbd></td><td>previous row</td></tr>
+      <tr><td><kbd>Enter</kbd></td><td>open the row</td></tr>
+      <tr><td><kbd>/</kbd></td><td>filter</td></tr>
+      <tr><td><kbd>Escape</kbd></td><td>clear the filter, close a dialog</td></tr>
+      <tr><td><kbd>?</kbd></td><td>these keys</td></tr>
+    </tbody>
+  </table>
+</dialog>
 {{ end -}}
 <div id="listing"{{ with .Watch }} hx-get="{{ . }}" hx-trigger="load" hx-select="#listing" hx-swap="outerHTML"{{ end }}>
 {{- if not .Entries }}

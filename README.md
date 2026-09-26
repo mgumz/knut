@@ -123,6 +123,11 @@ A bar marks one row of the listing:
 | `Enter`  | follow the row the bar is on  |
 | `/`      | jump into the filter box      |
 | `Escape` | empty the filter box          |
+| `?`      | open the keybind overview     |
+
+
+![keyboard bindings, shown as overlay](./media/knut-directory-listing-keys.png)
+
 
 ### Actions
 

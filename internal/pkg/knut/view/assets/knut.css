@@ -256,7 +256,8 @@ table.listing {
 
 /* the code of one entry, on top of the listing it was asked from */
 
-.qr-modal {
+.qr-modal,
+.keys-modal {
 	position: fixed;
 	inset: 0;
 	width: fit-content;
@@ -269,8 +270,31 @@ table.listing {
 	color: var(--fg);
 }
 
-.qr-modal::backdrop {
+.qr-modal::backdrop,
+.keys-modal::backdrop {
 	background: rgb(0 0 0 / 60%);
+}
+
+.keys {
+	border-collapse: collapse;
+}
+
+.keys td {
+	padding: .2rem .75rem .2rem 0;
+	vertical-align: baseline;
+}
+
+.keys td:first-child {
+	white-space: nowrap;
+}
+
+.keys kbd {
+	display: inline-block;
+	min-width: 1.5em;
+	padding: 0 .35em;
+	border: 2px solid var(--rule);
+	font-family: inherit;
+	text-align: center;
 }
 
 .qr-modal img {

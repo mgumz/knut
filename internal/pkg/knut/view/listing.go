@@ -355,7 +355,7 @@ func summarize(entries []ListEntry) string {
 	}
 
 	files := len(entries) - dirs
-	summary := plural(dirs, "folder") + " ι " + plural(files, "file")
+	summary := Plural(dirs, "folder") + " ι " + Plural(files, "file")
 	if files > 0 {
 		summary += " ι " + humanSize(bytes)
 	}
@@ -363,8 +363,8 @@ func summarize(entries []ListEntry) string {
 	return summary
 }
 
-// plural counts "noun"s the way english expects it.
-func plural(n int, noun string) string {
+// Plural counts "noun"s the way english expects it.
+func Plural(n int, noun string) string {
 	if n == 1 {
 		return "1 " + noun
 	}

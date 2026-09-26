@@ -161,6 +161,32 @@ the screen:
   a name or address the phone can use and the codes are there - the machine
   the browser runs on plays no part in it
 
+## Git Repositories
+
+`git://` publishes the repositories in a folder, or a single repository,
+through `git http-backend`. The URL to clone from is also a page for the
+browser:
+
+    $> knut /g:git://~/src/
+    $> git clone http://host:8080/g/knut/
+
+* the page lists the `git clone` command, the branches and tags, and the
+  latest 50 commits of `HEAD`
+* git clients ask for fixed paths below the repository (`info/refs`,
+  `git-upload-pack`, `objects/...`); those go to `git http-backend`,
+  everything else gets the page
+* a working tree (`knut/.git`) and a bare repository (`knut.git/`) both
+  have a page
+* a folder holding repositories lists them: the branch `HEAD` is on, the
+  date and subject of its commit. folders one level down which hold
+  repositories of their own (`org/repo.git`) are listed as folders. a
+  folder without any repository is a 404
+* `zip` takes the tree of `HEAD` along, the one on a branch or tag row that
+  ref: `git archive` packs it, named after the repository and the ref -
+  `curl -OJ 'http://host:8080/g/knut/?zip&ref=v1.0'`
+* with `-live` both pages follow commits, pushes, new branches and tags
+* browsing trees, files and diffs is left to `cgit://`
+
 ## Live Views
 
 `-live` makes the rendered pages move:
@@ -172,6 +198,8 @@ the screen:
   dropped into it shows up at once, and the chosen sort order survives the
   refresh. nothing is scanned on a timer: a folder nobody looks at costs
   nothing, and a folder ten people look at is watched once.
+* the pages of `git://` do the same with the refs of a repository: a
+  commit, a push, a new branch or tag shows up at once
 * the upload form posts in place and reports how far the bytes got. the bar
   measures the upload, so it stands at 100% while the last of it is still
   being written - the note next to it says so.

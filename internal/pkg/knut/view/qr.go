@@ -87,7 +87,19 @@ func qrCode(url string) template.URL {
 // counts is whether the host it asked for leads back here from elsewhere.
 func requestURL(r *http.Request) string {
 
-	if r.Host == "" || isLoopback(r.Host) {
+	if isLoopback(r.Host) {
+		return ""
+	}
+
+	return AbsoluteURL(r)
+}
+
+// AbsoluteURL spells out what "r" asked for, scheme and host in front -
+// whatever the host is, loopback included. it is the url to paste on the
+// machine the page is read on, requestURL the one to hand elsewhere.
+func AbsoluteURL(r *http.Request) string {
+
+	if r.Host == "" {
 		return ""
 	}
 

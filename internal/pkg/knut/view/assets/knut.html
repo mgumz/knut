@@ -148,6 +148,84 @@ be parsed and thrown away.
 {{- end }}
 {{ end }}
 
+{{/* git: .Clone, .Refs, .Commits, .Summary, .Watch */}}
+{{ define "git" -}}
+<div id="repo"{{ with .Watch }} hx-get="{{ . }}" hx-trigger="load" hx-select="#repo" hx-swap="outerHTML"{{ end }}>
+{{ with .Clone -}}
+<pre class="clone"><code>git clone {{ . }}</code></pre>
+{{ end -}}
+{{ if not .Commits -}}
+<p>no commits yet.</p>
+{{ else -}}
+<table class="listing refs">
+  <thead>
+    <tr>
+      <th class="name">ref</th><th class="type">commit</th><th class="date">date</th>
+      <th class="actions"><a class="zip" href="?zip" title="download HEAD as a zip">zip</a></th>
+    </tr>
+  </thead>
+  <tbody>
+{{- range .Refs }}
+    <tr{{ if .Branch }} class="dir"{{ end }}>
+      <td class="name">{{ .Name }}{{ if .Head }} <span class="meta">HEAD</span>{{ end }}</td>
+      <td class="type"><code>{{ .Hash }}</code></td>
+      <td class="date"><time datetime="{{ .ISO }}">{{ .Date }}</time></td>
+      <td class="actions"><a class="zip" href="?zip&ref={{ .Name }}" title="download {{ .Name }} as a zip">zip</a></td>
+    </tr>
+{{- end }}
+  </tbody>
+</table>
+<table class="listing log">
+  <thead>
+    <tr><th class="name">log</th><th class="type">author</th><th class="type">commit</th><th class="date">date</th></tr>
+  </thead>
+  <tbody>
+{{- range .Commits }}
+    <tr>
+      <td class="name" title="{{ .Subject }}">{{ .Subject }}</td>
+      <td class="type">{{ .Author }}</td>
+      <td class="type"><code>{{ .Hash }}</code></td>
+      <td class="date"><time datetime="{{ .ISO }}">{{ .Date }}</time></td>
+    </tr>
+{{- end }}
+  </tbody>
+</table>
+{{ end -}}
+<p class="meta summary">{{ .Summary }}</p>
+</div>
+{{ end }}
+
+{{/* git-list: .Repos, .Parent, .Summary, .Watch */}}
+{{ define "git-list" -}}
+<div id="repos"{{ with .Watch }} hx-get="{{ . }}" hx-trigger="load" hx-select="#repos" hx-swap="outerHTML"{{ end }}>
+<table class="listing repos">
+  <thead>
+    <tr><th class="name">repo</th><th class="type">HEAD</th><th class="date">date</th><th class="actions"></th></tr>
+  </thead>
+  <tbody>
+{{- with .Parent }}
+    <tr class="dir parent"><td class="name"><a href="{{ . }}">../</a></td><td class="type">-</td><td class="date">-</td><td class="actions"></td></tr>
+{{- end }}
+{{- range .Repos }}
+    <tr class="dir">
+      <td class="name"{{ with .Subject }} title="{{ . }}"{{ end }}><a href="{{ .URL }}">{{ .Name }}</a></td>
+{{- if .Repo }}
+      <td class="type">{{ .Branch }}</td>
+      <td class="date"><time datetime="{{ .ISO }}">{{ .Date }}</time></td>
+      <td class="actions">{{ if .Date }}<a class="zip" href="{{ .URL }}?zip" title="download HEAD as a zip">zip</a>{{ end }}</td>
+{{- else }}
+      <td class="type">dir</td>
+      <td class="date">-</td>
+      <td class="actions"></td>
+{{- end }}
+    </tr>
+{{- end }}
+  </tbody>
+</table>
+<p class="meta summary">{{ .Summary }}</p>
+</div>
+{{ end }}
+
 {{/* index: .Windows */}}
 {{ define "index" -}}
 <ul class="windows">

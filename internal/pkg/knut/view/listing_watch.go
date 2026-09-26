@@ -8,6 +8,7 @@ import (
 	"encoding/binary"
 	"hash/fnv"
 	"io"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -80,12 +81,19 @@ type ReadListing func() ([]ListEntry, string, error)
 // one being created, and a listing shows neither. so every wakeup is
 // followed by a read, and only a fingerprint which moved ends the wait.
 func watchListing(ctx context.Context, dir string, read ReadListing, entries []ListEntry, state string) ([]ListEntry, string) {
+	return hold(ctx, []string{dir}, read, entries, state)
+}
 
-	events, unwatch, err := fswatch.Folder(dir)
+// hold is watchListing for whatever a page shows: "read" hands over the
+// page and its fingerprint, "dirs" are the folders on disk it is read
+// from. "current" and "state" are what the caller already read.
+func hold[T any](ctx context.Context, dirs []string, read func() (T, string, error), current T, state string) (T, string) {
+
+	events, unwatch, err := fswatch.Folders(dirs...)
 	if err != nil {
 		// no watch, nothing to wait on: answer now and let the client
 		// re-arm rather than hold it for half a minute for nothing
-		return entries, state
+		return current, state
 	}
 	defer unwatch()
 
@@ -102,10 +110,31 @@ func watchListing(ctx context.Context, dir string, read ReadListing, entries []L
 
 		select {
 		case <-ctx.Done():
-			return entries, state
+			return current, state
 		case <-deadline.C:
-			return entries, state
+			return current, state
 		case <-events:
 		}
 	}
+}
+
+// Poll is the live half of a page which is not a listing. a request
+// carrying the fingerprint of the page the client has on screen is held
+// until the folders "dirs" names move, see hold - "dirs" is asked only
+// then, finding them may cost something.
+//
+// it returns what to render and the url the rendered page polls next.
+// that url is empty where the page is not live: then it renders once.
+func Poll[T any](r *http.Request, dirs func() []string, read func() (T, string, error)) (T, string, error) {
+
+	data, state, err := read()
+	if err != nil || !liveEnabled() {
+		return data, "", err
+	}
+
+	if want := r.URL.Query().Get(liveParam); want == state {
+		data, state = hold(r.Context(), dirs(), read, data, state)
+	}
+
+	return data, "?" + liveParam + "=" + state, nil
 }

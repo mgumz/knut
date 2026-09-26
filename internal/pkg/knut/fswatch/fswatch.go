@@ -9,6 +9,7 @@
 package fswatch
 
 import (
+	"errors"
 	"path/filepath"
 	"sync"
 
@@ -37,10 +38,46 @@ type folderWatch struct {
 // the one who knows what a change means. it is buffered by one and never
 // blocks the pump - two wakeups nobody picked up are one wakeup.
 func Folder(dir string) (<-chan struct{}, func(), error) {
-	return folders.subscribe(dir)
+	return Folders(dir)
 }
 
-func (fw *folderWatch) subscribe(dir string) (<-chan struct{}, func(), error) {
+// Folders reports changes in any of "dirs" on one channel, the way Folder
+// does for one. what one page shows can be read from several folders, and
+// the caller looks again whichever of them moved.
+//
+// a folder which cannot be watched is left out and the rest is watched all
+// the same: it is an error only when none of them can be.
+func Folders(dirs ...string) (<-chan struct{}, func(), error) {
+
+	events := make(chan struct{}, 1)
+	watched, err := []string{}, error(nil)
+
+	for _, dir := range dirs {
+		dir, subErr := folders.subscribe(dir, events)
+		if subErr != nil {
+			err = subErr
+			continue
+		}
+		watched = append(watched, dir)
+	}
+
+	if len(watched) == 0 {
+		if err == nil {
+			err = errors.New("fswatch: no folder to watch")
+		}
+		return nil, nil, err
+	}
+
+	return events, func() {
+		for _, dir := range watched {
+			folders.unsubscribe(dir, events)
+		}
+	}, nil
+}
+
+// subscribe hands "events" the changes of "dir" and returns the name the
+// folder is kept under.
+func (fw *folderWatch) subscribe(dir string, events chan struct{}) (string, error) {
 
 	dir = filepath.Clean(dir)
 
@@ -50,7 +87,7 @@ func (fw *folderWatch) subscribe(dir string) (<-chan struct{}, func(), error) {
 	if fw.fs == nil {
 		fs, err := fsnotify.NewWatcher()
 		if err != nil {
-			return nil, nil, err
+			return "", err
 		}
 		fw.fs = fs
 		go fw.pump(fs)
@@ -58,15 +95,14 @@ func (fw *folderWatch) subscribe(dir string) (<-chan struct{}, func(), error) {
 
 	if _, watched := fw.subs[dir]; !watched {
 		if err := fw.fs.Add(dir); err != nil {
-			return nil, nil, err
+			return "", err
 		}
 		fw.subs[dir] = map[chan struct{}]bool{}
 	}
 
-	events := make(chan struct{}, 1)
 	fw.subs[dir][events] = true
 
-	return events, func() { fw.unsubscribe(dir, events) }, nil
+	return dir, nil
 }
 
 func (fw *folderWatch) unsubscribe(dir string, events chan struct{}) {

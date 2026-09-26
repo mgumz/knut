@@ -83,3 +83,53 @@ func TestWatchFolderDropsOnce(t *testing.T) {
 		t.Errorf("got %d subscribers, want the one which never left", got)
 	}
 }
+
+// several folders report on one channel, a folder which cannot be watched
+// is left out, and leaving takes every one of them down
+func TestWatchFolders(t *testing.T) {
+
+	one, two := t.TempDir(), t.TempDir()
+	gone := filepath.Join(one, "gone")
+
+	events, drop, err := Folders(one, gone, two)
+	if err != nil {
+		t.Fatalf("watching: %v", err)
+	}
+
+	for _, dir := range []string{one, two} {
+		if err := os.WriteFile(filepath.Join(dir, "a.txt"), nil, 0600); err != nil {
+			t.Fatalf("writing into %q: %v", dir, err)
+		}
+		select {
+		case <-events:
+		case <-time.After(2 * time.Second):
+			t.Errorf("a change in %q was not reported", dir)
+		}
+		// the write into the next folder is the one to wait for
+		time.Sleep(50 * time.Millisecond)
+		select {
+		case <-events:
+		default:
+		}
+	}
+
+	drop()
+	for _, dir := range []string{one, two} {
+		if got := subscribers(dir); got != 0 {
+			t.Errorf("%q outlived the subscription, %d left", dir, got)
+		}
+	}
+}
+
+// nothing which can be watched is an error, not a channel nobody writes to
+func TestWatchFoldersNone(t *testing.T) {
+
+	gone := filepath.Join(t.TempDir(), "gone")
+
+	if _, _, err := Folders(gone); err == nil {
+		t.Error("watching a folder which is not there did not fail")
+	}
+	if _, _, err := Folders(); err == nil {
+		t.Error("watching no folder at all did not fail")
+	}
+}

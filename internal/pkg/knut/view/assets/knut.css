@@ -414,6 +414,22 @@ input[type="submit"]:hover {
 	accent-color: var(--accent);
 }
 
+/* the page of a git repository */
+
+.clone {
+	margin-bottom: 1.25rem;
+	overflow-x: auto;
+}
+
+.clone code,
+.listing code {
+	font: inherit;
+}
+
+table.listing + table.listing {
+	margin-top: 2rem;
+}
+
 /* status pages */
 
 .status .code {

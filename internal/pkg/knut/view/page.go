@@ -45,7 +45,7 @@ var pages = template.Must(template.New("knut").Funcs(funcs).Parse(knutHTML))
 // presentation decision, so the block which shows one makes it - the go
 // side hands over the number. the same goes for the uri of a page and the
 // code drawn from it, and for the icon.
-var funcs = template.FuncMap{"humansize": humanSize, "qrcode": qrCode, "icon": iconURI}
+var funcs = template.FuncMap{"humansize": humanSize, "qrcode": qrCode, "qrscript": qrScript, "icon": iconURI}
 
 // Page carries what the "layout" block needs. Page specific data embeds
 // it, so a "content" template reaches both its own fields and the ones

@@ -10,8 +10,23 @@ import (
 	"net/http"
 	"strings"
 
+	_ "embed"
+
 	qrcode "github.com/skip2/go-qrcode"
 )
+
+// qrJS opens a code in a dialog on top of the page: the one in the header,
+// and the one of a row of a listing. it is inlined like the stylesheet, and
+// it is an addition: without it the code in the header stays small, and
+// the link of a row is followed and shows the code on a page of its own.
+//
+//go:embed assets/qr.js
+var qrJS string
+
+// qrScript is qrJS as the markup takes it.
+func qrScript() template.JS {
+	return template.JS(qrJS)
+}
 
 // qrPixels is how wide the png is drawn. it is scaled down by the markup,
 // which keeps the code sharp on a display which packs more than one pixel

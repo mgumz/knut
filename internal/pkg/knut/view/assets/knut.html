@@ -54,6 +54,13 @@ published under. it also answers the request every browser makes for
       </div>
     </main>
     <footer><div>knut {{ .Version }}</div></footer>
+{{- if .URL }}
+    <dialog id="qr-modal" class="qr-modal">
+      <img id="qr-image" alt="" width="320" height="320">
+      <p id="qr-caption" class="meta"></p>
+    </dialog>
+    <script>{{ qrscript }}</script>
+{{- end }}
   </body>
 </html>
 {{ end }}
@@ -79,12 +86,6 @@ be parsed and thrown away.
   <input id="filter" type="search" placeholder="filter" autocomplete="off" spellcheck="false" hidden>
   <span id="filter-count" class="meta"></span>
 </div>
-{{ if .CodeQR }}
-<dialog id="qr-modal" class="qr-modal">
-  <img id="qr-image" alt="" width="320" height="320">
-  <p id="qr-caption" class="meta"></p>
-</dialog>
-{{ end }}
 <dialog id="keys-modal" class="keys-modal">
   <table class="keys">
     <tbody>
@@ -142,9 +143,6 @@ be parsed and thrown away.
 {{- if not .Fragment }}
 <script>{{ .Filter }}</script>
 <script>{{ .Keys }}</script>
-{{- if .CodeQR }}
-<script>{{ .QR }}</script>
-{{- end }}
 {{- end }}
 {{ end }}
 

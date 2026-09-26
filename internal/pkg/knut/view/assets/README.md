@@ -3,17 +3,17 @@
 What the `view` package embeds into the binary and inlines into the pages it
 renders.
 
-| file                 | goes out as                                     |
-|----------------------|-------------------------------------------------|
-| `knut.html`          | every page: the layout and one block per page    |
-| `knut.css`           | inlined into every page                          |
-| `listing-filter.js`  | inlined into every listing                       |
-| `listing-keys.js`    | inlined into every listing                       |
-| `listing-qr.js`      | inlined into a listing which offers codes        |
-| `htmx.min.js.gz`     | served at a reserved uri, `-live` only           |
+| file                 | goes out as                                       |
+|----------------------|---------------------------------------------------|
+| `knut.html`          | every page: the layout and one block per page     |
+| `knut.css`           | inlined into every page                           |
+| `listing-filter.js`  | inlined into every listing                        |
+| `listing-keys.js`    | inlined into every listing                        |
+| `qr.js`              | inlined into every page with a code in its header |
+| `htmx.min.js.gz`     | served at a reserved uri, `-live` only            |
 
-Every script is an addition: a listing without them is read, sorted and
-clicked like any other page.
+Every script is an addition: a page without them is read, sorted and
+clicked all the same.
 
 
 ## listing-filter.js
@@ -111,16 +111,22 @@ one called - the bar is placed once the rows which arrived are hidden or
 shown.
 
 
-## listing-qr.js
+## qr.js
+
+Opens a code in a dialog on top of the page: the one in the page header,
+and the `qr` of a row of a listing.
+
+The layout renders the dialog and the script on every page which has a code
+in its header, and on no other: a page asked for as `localhost` has none,
+see `requestURL()` in qr.go, and the rows of its listing offer none either.
 
 The last column of a listing holds what can be done with a row: the `zip` of
 a folder and the `qr` of either. Its header holds the same two for the
 folder being listed, `?zip` and `./`.
 
 `ListOpts` in listing.go says which of them a handler answers - a tree on
-disk both, a listing of a zip neither - and `offer()` puts the links on the
-rows and on the folder from that, so the markup never links what nobody
-answers.
+disk and a listing of a zip both - and `offer()` puts the links on the rows
+and on the folder from that, so the markup never links what nobody answers.
 
 The `qr` link points at the entry itself, the uri the name column links to:
 that is what the code carries. The png is a second resource, `<entry>?qr`,
@@ -142,10 +148,14 @@ The script turns the link into a dialog on top of the listing:
   dialog itself
 - the caption is the url the code carries, the link resolved against the
   page, and the image is that same url plus `?qr`
+- the image is scaled with `image-rendering: pixelated`: a code is square
+  modules on white, and smoothing blurs the edges a camera looks for
 
-The code in the page header opens the dialog of the folder, `./`, as the
-`qr` in the header of the listing does. It does not go through that link: a
-bare folder renders no table, so there is none to click.
+The code in the page header is not asked for again: the dialog shows the
+image already in the header, a data uri, and its `alt` - the url of the
+page - as the caption. That keeps the dialog working on every page, whether
+its handler answers `?qr` or not. The header image is drawn at 256 pixels
+and shown larger than that, which is where the pixelated scaling counts.
 
-Without the script the link is followed, which fetches the entry: a second
-way to the file, not a code.
+Without the script the `qr` link is followed, which fetches the entry: a
+second way to the file, not a code. The code in the header stays small.

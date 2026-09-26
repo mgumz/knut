@@ -231,3 +231,37 @@ func TestDirQRNotOfferedForTheZip(t *testing.T) {
 		t.Error("the zip of a folder is offered as a code")
 	}
 }
+
+// the code in the header opens larger on every page which has one, not
+// only on a listing - and a listing carries the dialog once, not twice
+func TestHeaderQRDialogOnEveryPage(t *testing.T) {
+
+	gitSetup(t)
+
+	pages := map[string]string{
+		"listing": get(DirListHandler(testFS()), "/").Body.String(),
+		"zip":     get(ZipFSHandler(testZip(t), "", ""), "/").Body.String(),
+		"upload":  get(UploadHandler(t.TempDir()), "/upload").Body.String(),
+		"git":     get(GitHandler(testRepos(t), "/"), "/one/").Body.String(),
+		"repos":   get(GitHandler(testRepos(t), "/"), "/").Body.String(),
+	}
+
+	for page, body := range pages {
+		if got := strings.Count(body, `<dialog id="qr-modal"`); got != 1 {
+			t.Errorf("the %s page carries %d code dialogs, want 1", page, got)
+		}
+		if !strings.Contains(body, `querySelector("header img.qr")`) {
+			t.Errorf("the %s page does not carry the script opening its code", page)
+		}
+	}
+}
+
+// a page with no code in its header has nothing to open
+func TestHeaderQRDialogNotOnLoopback(t *testing.T) {
+
+	body := getFrom(DirListHandler(testFS()), "/", "localhost:8080").Body.String()
+
+	if strings.Contains(body, `id="qr-modal"`) || strings.Contains(body, `header img.qr`) {
+		t.Error("a page without a code carries its dialog")
+	}
+}

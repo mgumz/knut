@@ -64,10 +64,10 @@ func armedURL(t *testing.T, folder, body string) string {
 // without -live knut talks to no one: no polling, no fragments, no uri
 // reserved for an asset.
 //
-// the listing is the one page which carries a script either way - the
-// filter is inlined into it and leans on nothing, see
-// assets/listing-filter.js. what -live buys is htmx, and that is what is
-// checked for here.
+// a page carries script either way: the listing its filter, every page
+// with a code in its header the dialog showing it larger - inlined, and
+// leaning on nothing, see assets/README.md. what -live buys is htmx, and
+// that is what is checked for here.
 func TestLiveOffRendersNoJavaScript(t *testing.T) {
 
 	bodies := map[string]string{
@@ -86,9 +86,15 @@ func TestLiveOffRendersNoJavaScript(t *testing.T) {
 		}
 	}
 
-	// the upload page has nothing to filter and stays free of script
-	if strings.Contains(bodies["upload"], "<script") {
-		t.Error("the upload page carries a script without -live")
+	// the upload page has nothing to filter: the one script it carries is
+	// the one which shows the code in its header larger
+	if got := strings.Count(bodies["upload"], "<script"); got != 1 || !strings.Contains(bodies["upload"], `<dialog id="qr-modal"`) {
+		t.Errorf("the upload page carries %d scripts, want the one of its code", got)
+	}
+
+	// and read where knut runs there is no code, and so no script at all
+	if body := getFrom(UploadHandler(t.TempDir()), "/upload", "localhost:8080").Body.String(); strings.Contains(body, "<script") {
+		t.Error("the upload page on a loopback host carries a script")
 	}
 }
 

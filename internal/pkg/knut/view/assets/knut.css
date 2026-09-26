@@ -303,6 +303,7 @@ table.listing {
 
 .qr-modal img {
 	display: block;
+	image-rendering: pixelated;
 	width: min(20rem, 60vh, calc(100vw - 4 * var(--gutter)));
 	height: auto;
 }

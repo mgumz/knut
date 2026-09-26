@@ -12,33 +12,33 @@
 	var image = document.getElementById("qr-image"),
 		caption = document.getElementById("qr-caption");
 
-	// the link is the entry itself, the code of it is that same uri with
-	// "?qr" on the end - drawn by the server, asked for once it is shown
-	function open(href) {
-		var url = new URL(href, location.href).href;
-
-		image.src = url + "?qr";
+	function open(src, url) {
+		image.src = src;
 		image.alt = caption.textContent = url;
 		dialog.showModal();
 	}
 
+	// the link is the entry itself, the code of it is that same uri with
+	// "?qr" on the end - drawn by the server, asked for once it is shown
 	document.addEventListener("click", function (event) {
 		var link = event.target.closest && event.target.closest("a.qr-link");
 		if (!link) {
 			return;
 		}
 		event.preventDefault();
-		open(link.getAttribute("href"));
+
+		var url = new URL(link.getAttribute("href"), location.href).href;
+		open(url + "?qr", url);
 	});
 
-	// the code in the page header stands for the folder, as the "qr" in the
-	// header of the listing does - but a bare folder has no listing header,
-	// and a live one may fill up any moment, so it does not ask that link
+	// the code in the page header is already on the page: it is shown
+	// larger, not asked for again. that is what makes it work on every
+	// page, whether its handler answers "?qr" or not
 	var code = document.querySelector("header img.qr");
 	if (code) {
 		code.classList.add("qr-open");
 		code.addEventListener("click", function () {
-			open("./");
+			open(code.src, code.alt);
 		});
 	}
 

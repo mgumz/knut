@@ -116,17 +116,21 @@ like the rest of the page.
 
 A bar marks one row of the listing:
 
-| key      | does                          |
-|----------|-------------------------------|
-| `j`, `↓` | move the bar down one row     |
-| `k`, `↑` | move the bar up one row       |
-| `Enter`  | follow the row the bar is on  |
-| `/`      | jump into the filter box      |
-| `Escape` | empty the filter box          |
-| `?`      | open the keybind overview     |
+| key         | does                          |
+|-------------|-------------------------------|
+| `j`, `↓`    | move the bar down one row     |
+| `k`, `↑`    | move the bar up one row       |
+| `Enter`     | follow the row the bar is on  |
+| `Backspace` | go back in the history        |
+| `/`         | jump into the filter box      |
+| `Escape`    | empty the filter box          |
+| `?`         | open the keybind overview     |
 
 
 ![keyboard bindings, shown as overlay](./media/knut-directory-listing-keys.png)
+
+The index of `-serve-index` answers the same keys, minus `/`: it has no
+filter box.
 
 
 ### Actions

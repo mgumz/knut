@@ -125,3 +125,51 @@ func TestListingFragmentSkipsTheFilter(t *testing.T) {
 		t.Errorf("the fragment starts with %.40q", string(body))
 	}
 }
+
+// the index walks its mappings with the keys of a listing, and lists the
+// keys it answers: no filter, so no "/"
+func TestIndexCarriesTheKeys(t *testing.T) {
+
+	body, err := Render(Template("index"), struct {
+		Page
+		Windows []string
+	}{Page: NewPage(""), Windows: []string{"/d/"}})
+	if err != nil {
+		t.Fatalf("rendering the index: %v", err)
+	}
+
+	for _, want := range []string{
+		`<tr><td class="name"><a href="./d/">/d/</a></td></tr>`,
+		`<dialog id="keys-modal"`,
+		`<td>close a dialog</td>`,
+		`<kbd>Backspace</kbd>`,
+		`event.key === "j"`,
+		`history.back()`,
+	} {
+		if !strings.Contains(string(body), want) {
+			t.Errorf("the index does not render %q", want)
+		}
+	}
+	if strings.Contains(string(body), "<kbd>/</kbd>") {
+		t.Error("the index lists the filter key, it has no filter")
+	}
+}
+
+// the listing lists the keys of its filter as well
+func TestListingListsTheFilterKeys(t *testing.T) {
+
+	entries := []ListEntry{NewListEntry("a.txt", 12, modTime(15), false)}
+	r := httptest.NewRequest("GET", "/", nil)
+	list := newListing(r, entries, listSort{Key: sortKeyName, Order: orderAsc}, ListOpts{})
+
+	body, err := Render(Template("listing"), list)
+	if err != nil {
+		t.Fatalf("rendering the listing: %v", err)
+	}
+
+	for _, want := range []string{`<dialog id="keys-modal"`, "<kbd>/</kbd>", "<kbd>Backspace</kbd>", `<td>clear the filter, close a dialog</td>`} {
+		if !strings.Contains(string(body), want) {
+			t.Errorf("the listing does not render %q", want)
+		}
+	}
+}

@@ -86,18 +86,7 @@ be parsed and thrown away.
   <input id="filter" type="search" placeholder="filter" autocomplete="off" spellcheck="false" hidden>
   <span id="filter-count" class="meta"></span>
 </div>
-<dialog id="keys-modal" class="keys-modal">
-  <table class="keys">
-    <tbody>
-      <tr><td><kbd>j</kbd> <kbd>↓</kbd></td><td>next row</td></tr>
-      <tr><td><kbd>k</kbd> <kbd>↑</kbd></td><td>previous row</td></tr>
-      <tr><td><kbd>Enter</kbd></td><td>open the row</td></tr>
-      <tr><td><kbd>/</kbd></td><td>filter</td></tr>
-      <tr><td><kbd>Escape</kbd></td><td>clear the filter, close a dialog</td></tr>
-      <tr><td><kbd>?</kbd></td><td>these keys</td></tr>
-    </tbody>
-  </table>
-</dialog>
+{{ template "keys-modal" true }}
 {{ end -}}
 <div id="listing"{{ with .Watch }} hx-get="{{ . }}" hx-trigger="load" hx-select="#listing" hx-swap="outerHTML"{{ end }}>
 {{- if not .Entries }}
@@ -142,9 +131,33 @@ be parsed and thrown away.
 </div>
 {{- if not .Fragment }}
 <script>{{ .Filter }}</script>
-<script>{{ .Keys }}</script>
+<script>{{ keysscript }}</script>
 {{- end }}
 {{ end }}
+
+{{/*
+keys-modal: true where the page has the filter box, which "/" and Escape
+reach. listing-keys.js opens it on "?".
+*/}}
+{{ define "keys-modal" -}}
+<dialog id="keys-modal" class="keys-modal">
+  <table class="keys">
+    <tbody>
+      <tr><td><kbd>j</kbd> <kbd>↓</kbd></td><td>next row</td></tr>
+      <tr><td><kbd>k</kbd> <kbd>↑</kbd></td><td>previous row</td></tr>
+      <tr><td><kbd>Enter</kbd></td><td>open the row</td></tr>
+      <tr><td><kbd>Backspace</kbd></td><td>back</td></tr>
+{{- if . }}
+      <tr><td><kbd>/</kbd></td><td>filter</td></tr>
+      <tr><td><kbd>Escape</kbd></td><td>clear the filter, close a dialog</td></tr>
+{{- else }}
+      <tr><td><kbd>Escape</kbd></td><td>close a dialog</td></tr>
+{{- end }}
+      <tr><td><kbd>?</kbd></td><td>these keys</td></tr>
+    </tbody>
+  </table>
+</dialog>
+{{- end }}
 
 {{/* git: .Clone, .Refs, .Commits, .Newer, .Latest, .Summary, .LogCount, .Watch */}}
 {{ define "git" -}}
@@ -247,13 +260,17 @@ so the count it swaps out of band comes after them.
 </div>
 {{ end }}
 
-{{/* index: .Windows */}}
+{{/* index: .Windows - rows of a listing, so the keys of one walk them */}}
 {{ define "index" -}}
-<ul class="windows">
+<table class="listing windows">
+  <tbody>
 {{- range .Windows }}
-  <li><a href=".{{ . }}">{{ . }}</a></li>
+    <tr><td class="name"><a href=".{{ . }}">{{ . }}</a></td></tr>
 {{- end }}
-</ul>
+  </tbody>
+</table>
+{{ template "keys-modal" false }}
+<script>{{ keysscript }}</script>
 {{ end }}
 
 {{/* status: .Code, .Text */}}

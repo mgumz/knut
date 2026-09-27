@@ -26,10 +26,13 @@ var filterJS string
 
 // keysJS walks the rows of a listing from the keyboard. it is inlined like
 // the filter, and like it it adds: the listing is read and clicked the same
-// way without it.
+// way without it. the index ships it too, its mappings are rows of the same
+// kind.
 //
 //go:embed assets/listing-keys.js
 var keysJS string
+
+func keysScript() template.JS { return template.JS(keysJS) }
 
 // the listing is rendered in the order given by "?sort=" and "?order=".
 const (
@@ -212,7 +215,6 @@ type listing struct {
 	CodeQR     bool   // this folder can be shown as a code to scan
 
 	Filter   template.JS // the client side filter, inlined into the page
-	Keys     template.JS // the keys which walk the rows, the same
 	Fragment bool        // this render goes to htmx, which wants #listing alone
 }
 
@@ -287,7 +289,6 @@ func newListing(r *http.Request, entries []ListEntry, sort listSort, opts ListOp
 		Entries:  entries,
 		Summary:  summarize(entries),
 		Filter:   template.JS(filterJS),
-		Keys:     template.JS(keysJS),
 		Fragment: isFragment(r),
 	}
 	if opts.Parent {

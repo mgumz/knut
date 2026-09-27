@@ -9,7 +9,7 @@ renders.
 | `knut.txt`           | the text form of a page, for curl and scripts     |
 | `knut.css`           | inlined into every page                           |
 | `listing-filter.js`  | inlined into every listing                        |
-| `listing-keys.js`    | inlined into every listing                        |
+| `listing-keys.js`    | inlined into every listing and the index          |
 | `qr.js`              | inlined into every page with a code in its header |
 | `htmx.min.js.gz`     | served at a reserved uri, `-live` only            |
 
@@ -111,8 +111,14 @@ Walks the rows of a listing from the keyboard. Which key does what is the
 and `Escape`.
 
 `?` opens `#keys-modal`, a table of those keys. The table is written by
-hand in `knut.html`, so a key added to either handler has to be added
-there too.
+hand in `knut.html`, block `keys-modal`, so a key added to either handler
+has to be added there too. The block takes one flag: whether the page has
+the filter box, which is what `/` and the first use of `Escape` reach.
+
+The index of the mappings ships the same script. Its mappings are rendered
+as rows of a `table.listing` with a `name` cell, which is all the script
+looks for, so it walks them without knowing it is not in a listing. The
+index has no filter, so its table of keys leaves `/` out.
 
 - the bar is a `selected` class on a `<tr>`, drawn as a solid block of the
   accent colour. a pointer passing over a row only tints it, so the two do

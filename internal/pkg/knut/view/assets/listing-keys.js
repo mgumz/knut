@@ -119,6 +119,9 @@
 			// twice
 			event.preventDefault();
 			follow();
+		} else if (event.key === "Backspace") {
+			event.preventDefault();
+			history.back();
 		} else if (event.key === "?" && help && help.showModal) {
 			event.preventDefault();
 			help.showModal();

@@ -356,20 +356,6 @@ table.listing {
 	color: var(--muted);
 }
 
-/* index of the published mappings */
-
-ul.windows {
-	list-style: none;
-}
-
-ul.windows li {
-	padding: .1rem .6rem;
-}
-
-ul.windows li:hover {
-	background: var(--hover);
-}
-
 /* forms: the upload page */
 
 form {

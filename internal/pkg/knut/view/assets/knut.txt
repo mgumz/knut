@@ -1,0 +1,60 @@
+{{/*
+the text form of the pages of assets/knut.html, one block of the same name
+for each page which has one. no layout around them: the answer is what the
+page shows, nothing else.
+
+"row" writes one line with its cells tab separated, and the columns are
+lined up on the way out. the free text of a row - a name, a subject - is
+its last cell.
+
+the whitespace is part of the output, as in knut.html.
+*/}}
+
+{{ define "listing" -}}
+{{ range .Entries -}}
+{{ if .Dir }}{{ row "-" (or .Date "-") .Name }}{{ else }}{{ row (humansize .Bytes) (or .Date "-") .Name }}{{ end }}
+{{- end }}
+{{- end }}
+
+{{ define "git" -}}
+git clone {{ .Clone }}
+{{ if and (not .Refs) (not .Commits) }}
+no commits yet
+{{ else }}
+{{ range .Refs -}}
+{{ if .Head }}{{ row .Name "HEAD" .Hash .Date }}{{ else }}{{ row .Name "" .Hash .Date }}{{ end }}
+{{- end }}
+{{ with .Newer }}newer: {{ $.Clone }}{{ if ne . "./" }}{{ . }}{{ end }}
+{{ end -}}
+{{ range .Commits -}}
+{{ row .Hash .Date .Author .Subject }}
+{{- end }}
+{{- with .More }}older: {{ $.Clone }}{{ .Page }}
+{{ end -}}
+{{ end -}}
+{{ end }}
+
+{{ define "git-list" -}}
+{{ range .Repos -}}
+{{ if .Repo }}{{ row (or .Branch "-") (or .Date "-") .Name }}{{ else }}{{ row "dir" "-" .Name }}{{ end }}
+{{- end }}
+{{- end }}
+
+{{ define "index" -}}
+{{ range .Windows }}{{ . }}
+{{ end -}}
+{{ end }}
+
+{{ define "status" -}}
+{{ .Code }} {{ .Text }}
+{{ end }}
+
+{{ define "upload-done" -}}
+ok, received {{ humansize .Size }} in {{ .Duration }}
+{{ end }}
+
+{{ define "myip" -}}
+{{ .IP }}
+{{ with .ASN }}{{ . }}
+{{ end -}}
+{{ end }}

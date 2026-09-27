@@ -19,7 +19,7 @@ var indexTmpl = view.Template("index")
 func IndexHandler(windows []string) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		view.Write(w, indexTmpl, struct {
+		view.WriteFor(w, r, indexTmpl, struct {
 			view.Page
 			Windows []string
 		}{Page: view.PageFor(r, ""), Windows: windows})

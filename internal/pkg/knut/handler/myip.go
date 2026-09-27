@@ -96,6 +96,6 @@ func MyIPHandler(infoAPI string, fuzzy bool) http.Handler {
 		myip := &myIP{Page: view.PageFor(r, "myip"), IP: ip, Port: port}
 		myip = retrieveASN(myip)
 		myip = fuzzyIP(myip)
-		view.Write(w, tmpl, myip)
+		view.WriteFor(w, r, tmpl, myip)
 	})
 }

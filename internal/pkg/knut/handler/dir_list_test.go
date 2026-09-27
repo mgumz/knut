@@ -71,9 +71,21 @@ func testTree(t *testing.T) string {
 	return root
 }
 
+// get asks the way a browser does, for html: the form most tests look
+// into. getText asks the way curl does.
 func get(h http.Handler, target string) *httptest.ResponseRecorder {
+	req := httptest.NewRequest(http.MethodGet, target, nil)
+	req.Header.Set("Accept", "text/html")
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, target, nil))
+	h.ServeHTTP(rec, req)
+	return rec
+}
+
+func getText(h http.Handler, target string) *httptest.ResponseRecorder {
+	req := httptest.NewRequest(http.MethodGet, target, nil)
+	req.Header.Set("Accept", "*/*")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
 	return rec
 }
 

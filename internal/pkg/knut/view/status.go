@@ -31,6 +31,10 @@ func Status(w http.ResponseWriter, r *http.Request, code int) {
 		Text: http.StatusText(code),
 	}
 
+	if r != nil && writeTextFor(w, r, code, statusTmpl, status) {
+		return
+	}
+
 	body, err := Render(statusTmpl, status)
 	if err != nil {
 		// the status page is what Write falls back to, it cannot

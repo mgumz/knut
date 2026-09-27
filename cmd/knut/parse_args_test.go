@@ -33,7 +33,7 @@ func TestFolderMappingServesItsChildren(t *testing.T) {
 
 	// the mux redirects the bare window to the subtree on its own
 	rec := httptest.NewRecorder()
-	muxer.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/files", nil))
+	muxer.ServeHTTP(rec, browse("/files"))
 	if rec.Code/100 != 3 {
 		t.Errorf("got status %d for /files, want a redirect", rec.Code)
 	}
@@ -43,7 +43,7 @@ func TestFolderMappingServesItsChildren(t *testing.T) {
 
 	// and a file below it is served, not swallowed by a catch-all
 	rec = httptest.NewRecorder()
-	muxer.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/files/README.md", nil))
+	muxer.ServeHTTP(rec, browse("/files/README.md"))
 	if rec.Code != http.StatusOK {
 		t.Fatalf("got status %d for /files/README.md, want %d", rec.Code, http.StatusOK)
 	}
@@ -67,7 +67,7 @@ func TestFileMappingStaysExact(t *testing.T) {
 	}
 
 	rec := httptest.NewRecorder()
-	muxer.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/ding.txt", nil))
+	muxer.ServeHTTP(rec, browse("/ding.txt"))
 	if got := rec.Body.String(); got != "dong" {
 		t.Errorf("got body %q, want %q", got, "dong")
 	}
@@ -150,7 +150,7 @@ func TestZipFSMappingBelowRoot(t *testing.T) {
 
 	for _, test := range tests {
 		rec := httptest.NewRecorder()
-		muxer.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, test.path, nil))
+		muxer.ServeHTTP(rec, browse(test.path))
 		if rec.Code != http.StatusOK {
 			t.Errorf("%s: got status %d, want %d", test.path, rec.Code, http.StatusOK)
 			continue
@@ -162,7 +162,7 @@ func TestZipFSMappingBelowRoot(t *testing.T) {
 
 	// the folder listing has to find the entries as well
 	rec := httptest.NewRecorder()
-	muxer.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/z.zip/", nil))
+	muxer.ServeHTTP(rec, browse("/z.zip/"))
 	body := rec.Body.String()
 	for _, want := range []string{`<a href="example.txt">`, `<a href="sub/">`} {
 		if !strings.Contains(body, want) {
@@ -183,13 +183,13 @@ func TestListingLinksResolveBelowTheWindow(t *testing.T) {
 	muxer, _ := prepareTrees(http.NewServeMux(), []string{"/files:" + root})
 
 	rec := httptest.NewRecorder()
-	muxer.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/files/", nil))
+	muxer.ServeHTTP(rec, browse("/files/"))
 	if !strings.Contains(rec.Body.String(), `<a href="README.md">`) {
 		t.Fatal("listing does not link README.md relative")
 	}
 
 	rec = httptest.NewRecorder()
-	muxer.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/files/README.md", nil))
+	muxer.ServeHTTP(rec, browse("/files/README.md"))
 	if rec.Code != http.StatusOK {
 		t.Errorf("got status %d for the linked file, want %d", rec.Code, http.StatusOK)
 	}
@@ -224,7 +224,7 @@ func TestUnmappedIsKnutNotFound(t *testing.T) {
 
 	for _, target := range []string{"/unmapped", "/ding.txt/x"} {
 		rec := httptest.NewRecorder()
-		muxer.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, target, nil))
+		muxer.ServeHTTP(rec, browse(target))
 		if rec.Code != http.StatusNotFound {
 			t.Errorf("%q: got status %d, want %d", target, rec.Code, http.StatusNotFound)
 		}
@@ -252,9 +252,17 @@ func TestIndexAnswersRootOnly(t *testing.T) {
 		"/d/":       http.StatusOK,
 	} {
 		rec := httptest.NewRecorder()
-		muxer.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, target, nil))
+		muxer.ServeHTTP(rec, browse(target))
 		if rec.Code != want {
 			t.Errorf("%q: got status %d, want %d", target, rec.Code, want)
 		}
 	}
+}
+
+// browse is a GET the way a browser sends it: asking for html, the form
+// the tests here look into.
+func browse(target string) *http.Request {
+	req := httptest.NewRequest(http.MethodGet, target, nil)
+	req.Header.Set("Accept", "text/html")
+	return req
 }

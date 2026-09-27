@@ -6,6 +6,7 @@ renders.
 | file                 | goes out as                                       |
 |----------------------|---------------------------------------------------|
 | `knut.html`          | every page: the layout and one block per page     |
+| `knut.txt`           | the text form of a page, for curl and scripts     |
 | `knut.css`           | inlined into every page                           |
 | `listing-filter.js`  | inlined into every listing                        |
 | `listing-keys.js`    | inlined into every listing                        |
@@ -14,6 +15,27 @@ renders.
 
 Every script is an addition: a page without them is read, sorted and
 clicked all the same.
+
+
+## knut.txt
+
+The text form of the pages which have one: a block of the same name as in
+`knut.html`, rendered through `text/template`. `Template()` in page.go
+registers it next to the page, so the handlers pass one template around and
+`WriteFor()` picks the form, see `wantsText()` in text.go:
+
+- `HX-Request` gets the markup: htmx sits in a page
+- `?html` and `?text` decide outright
+- else text, unless `Accept` names `text/html` (or xhtml) with a weight
+  above 0. browsers do when they navigate, curl and wget send `*/*`
+
+A page without a text block goes out as markup to everyone. A page with
+one carries `Vary: Accept` in either form, so a cache keeps the two apart.
+
+`row` writes one line with tab separated cells, and `text/tabwriter` lines
+the columns up on the way out. The free text of a row - a name, a subject -
+is its last cell, so it does not push the columns after it around. A block
+line without a tab, like an empty one, ends the run of lines lined up.
 
 
 ## listing-filter.js

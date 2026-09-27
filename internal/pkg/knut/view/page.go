@@ -108,7 +108,10 @@ func Template(name string) *template.Template {
 
 	template.Must(tmpl.New(contentTmpl).Parse(`{{ template "` + name + `" . }}`))
 
-	return tmpl.Lookup(layoutTmpl)
+	page := tmpl.Lookup(layoutTmpl)
+	registerText(page, name)
+
+	return page
 }
 
 // Block is the block "name" of assets/knut.html alone, without the layout
@@ -139,17 +142,28 @@ func isFragment(r *http.Request) bool {
 }
 
 // WriteFor answers "r" with "data": htmx replaces a piece of a page
-// which is already on screen, so it gets the content template alone.
-// every other client - a browser navigating, curl, wget - gets the page.
+// which is already on screen, so it gets the content template alone. a
+// client not asking for html - curl, wget, a script - gets the text form
+// of the page where it has one, see wantsText. a browser gets the page.
 func WriteFor(w http.ResponseWriter, r *http.Request, tmpl *template.Template, data any) {
+	writeStatusFor(w, r, http.StatusOK, tmpl, data)
+}
+
+func writeStatusFor(w http.ResponseWriter, r *http.Request, code int, tmpl *template.Template, data any) {
 
 	if isFragment(r) {
 		if content := tmpl.Lookup(contentTmpl); content != nil {
 			tmpl = content
 		}
+		WriteStatus(w, code, tmpl, data)
+		return
 	}
 
-	Write(w, tmpl, data)
+	if writeTextFor(w, r, code, tmpl, data) {
+		return
+	}
+
+	WriteStatus(w, code, tmpl, data)
 }
 
 // WriteStatus renders "data" as an html response under "code".

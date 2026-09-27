@@ -100,6 +100,7 @@ func TestListingArmsThePollOnlyWhenItCanWatch(t *testing.T) {
 
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			req.Header.Set("Accept", "text/html")
 			if err := Listing(rec, req, read, ListOpts{Dir: test.dir}); err != nil {
 				t.Fatalf("listing: %v", err)
 			}

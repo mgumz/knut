@@ -15,6 +15,7 @@ import (
 func TestStatusFramedLikeThePage(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "/d/missing%20file.txt", nil)
+	req.Header.Set("Accept", "text/html")
 	req.Host = "10.0.0.1:8080"
 	rec := httptest.NewRecorder()
 	Status(rec, req, http.StatusNotFound)

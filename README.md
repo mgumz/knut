@@ -227,6 +227,26 @@ To vendor another htmx release:
 
     $> go generate ./internal/pkg/knut/view
 
+## Text for the Terminal
+
+A client which does not ask for HTML gets the pages as plain text: curl,
+wget, a script. Browsers ask for HTML and get the page.
+
+    $> curl http://host:8080/d/
+    300 B    2026-09-19 13:04  b.txt
+    2.9 KiB  2026-09-19 14:04  big.bin
+    -        2026-09-19 16:04  sub/
+
+* one line per entry, the columns lined up, the name last. `?sort=` and
+  `?order=` work the same as on the page
+* the page of a git repository: the `git clone` line, the refs, 50 commits,
+  and the URL of the next 50 (`older:`)
+* the repo list, the index, `myip` (the address alone), the answer to an
+  upload (`curl -F f=@file host:8080/upload`), and every error: `404 Not
+  Found`
+* `?text` and `?html` pick the form, whatever the client asks for
+* downloads, `?zip` and `?qr` are what they were
+
 ## Build & Installing
 
 The only requirement to build *knut*: A working go-compiler. Check

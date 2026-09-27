@@ -18,6 +18,7 @@ import (
 func getFrom(h http.Handler, target, host string) *httptest.ResponseRecorder {
 
 	req := httptest.NewRequest(http.MethodGet, target, nil)
+	req.Header.Set("Accept", "text/html")
 	req.Host = host
 
 	rec := httptest.NewRecorder()

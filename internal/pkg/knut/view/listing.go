@@ -276,6 +276,7 @@ func (l *listing) watch(sort listSort, state string) {
 	l.Watch = "?sort=" + sort.Key +
 		"&order=" + sort.Order +
 		"&" + liveParam + "=" + state
+	l.Watched = true
 }
 
 // newListing sorts "entries" and frames them as the page "r" asked for.

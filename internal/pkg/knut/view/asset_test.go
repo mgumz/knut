@@ -4,12 +4,15 @@
 package view
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/mgumz/knut/internal/pkg/knut"
 )
@@ -251,6 +254,72 @@ func TestAcceptsGzip(t *testing.T) {
 		}
 		if got := acceptsGzip(req); got != test.want {
 			t.Errorf("acceptsGzip(%q): got %v, want %v", test.header, got, test.want)
+		}
+	}
+}
+
+// the reserved query is held, on any uri, and answered with the element
+// which asks again - never passed on to the mapping
+func TestAliveIsHeldAndRearms(t *testing.T) {
+
+	livePace(t, 20*time.Millisecond)
+	passed := false
+	h := AssetHandler(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { passed = true }))
+
+	rec := httptest.NewRecorder()
+	start := time.Now()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/some/page/?"+knut.LiveAliveQuery, nil))
+
+	if passed {
+		t.Error("the reserved query reached the mapping")
+	}
+	if waited := time.Since(start); waited < 20*time.Millisecond {
+		t.Errorf("answered after %v, want it held for the live timeout", waited)
+	}
+	if want := `<div id="knut-alive" hidden hx-get="?` + knut.LiveAliveQuery + `" hx-trigger="load" hx-swap="outerHTML"></div>`; rec.Body.String() != want {
+		t.Errorf("got %q, want %q", rec.Body.String(), want)
+	}
+	if got := rec.Header().Get("Cache-Control"); got != "no-store" {
+		t.Errorf("got Cache-Control %q, want no-store", got)
+	}
+}
+
+// a client walking away ends the hold at once
+func TestAliveEndsWithTheClient(t *testing.T) {
+
+	livePace(t, time.Hour)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/?"+knut.LiveAliveQuery, nil).WithContext(ctx)
+	AssetHandler(http.NotFoundHandler()).ServeHTTP(rec, req)
+
+	if rec.Body.Len() != 0 {
+		t.Errorf("got a body for a client which is gone: %q", rec.Body.String())
+	}
+}
+
+// a page with nothing to watch holds the query open, one which polls on
+// its own does not - one held request per page
+func TestAliveOnlyWhereNothingPolls(t *testing.T) {
+
+	liveMode(t)
+	req := httptest.NewRequest(http.MethodGet, "/nope", nil)
+	req.Header.Set("Accept", "text/html")
+
+	for _, test := range []struct {
+		watched bool
+		want    bool
+	}{{false, true}, {true, false}} {
+		page := PageFor(req, "")
+		page.Watched = test.watched
+		body, err := Render(Template("status"), statusPage(page))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := strings.Contains(string(body), `id="knut-alive"`); got != test.want {
+			t.Errorf("watched %v: carries the query %v, want %v", test.watched, got, test.want)
 		}
 	}
 }

@@ -222,6 +222,10 @@ is on screen. And it answers `/.knut/htmx.js` itself - that is where it
 serves [htmx](https://htmx.org) - so a file of that name cannot be served
 from a published tree. *knut* warns at startup if a mapping claims it.
 
+A page with nothing to watch - the index, an error page, `myip` - holds
+one request open instead, on its own URI plus `?knut-alive`, so it notices
+the moment *knut* is gone. That query is *knut*'s on every URI.
+
 Live listings lean on the filesystem reporting its own changes (inotify,
 kqueue, `ReadDirectoryChangesW`). A tree served off a network mount - NFS,
 SMB - reports nothing of the sort: such a listing renders and stays put

@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	_ "embed"
 
@@ -23,8 +24,8 @@ import (
 //go:embed assets/htmx.min.js.gz
 var htmxGz []byte
 
-// AssetHandler answers the reserved htmx uri, everything else goes to
-// "next".
+// AssetHandler answers the reserved htmx uri and the reserved query of a
+// page holding on to knut, see alive. everything else goes to "next".
 //
 // it belongs above CompressHandler in the chain: the asset is embedded
 // gzipped and is handed out that way, gzipping it a second time would cost
@@ -35,6 +36,11 @@ func AssetHandler(next http.Handler) http.Handler {
 	etag := `"htmx-` + htmxVersion + `"`
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		if r.Method == http.MethodGet && r.URL.Query().Has(knut.LiveAliveQuery) {
+			alive(w, r)
+			return
+		}
 
 		if r.URL.Path != knut.LiveAssetURI {
 			next.ServeHTTP(w, r)
@@ -100,3 +106,26 @@ func acceptsGzip(r *http.Request) bool {
 	}
 	return false
 }
+
+// alive holds "r" until LiveTimeout is up, and answers with the element
+// which asks again: a page with nothing to watch keeps one request open
+// this way, and a knut which goes away breaks it - which is what shows
+// the bar saying knut is gone, see the layout.
+func alive(w http.ResponseWriter, r *http.Request) {
+
+	deadline := time.NewTimer(LiveTimeout)
+	defer deadline.Stop()
+
+	select {
+	case <-r.Context().Done():
+		return
+	case <-deadline.C:
+	}
+
+	w.Header().Set("Cache-Control", "no-store")
+	Write(w, aliveTmpl, knut.LiveAliveQuery)
+}
+
+var aliveTmpl = Block("alive")
+
+func aliveQuery() string { return knut.LiveAliveQuery }

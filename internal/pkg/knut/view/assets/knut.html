@@ -44,6 +44,9 @@ published under. it also answers the request every browser makes for
 {{- if .Live }}
     <div id="gone" hidden
 {{- with .Path }} hx-get="{{ . }}" hx-trigger="knut:knock delay:2s" hx-swap="none" hx-on::after-request="if (event.detail.xhr.status) location.reload()"{{ end }}><div>... is gone.</div></div>
+{{- if and .Path (not .Watched) }}
+    {{ template "alive" alivequery }}
+{{- end }}
 {{- end }}
     <main>
       <div class="page">
@@ -64,6 +67,17 @@ published under. it also answers the request every browser makes for
   </body>
 </html>
 {{ end }}
+
+{{/*
+alive: the reserved query
+
+a page with no poll of its own holds this one open, and gets the same
+element back when knut sends it home - which asks again. see alive() in
+asset.go.
+*/}}
+{{ define "alive" -}}
+<div id="knut-alive" hidden hx-get="?{{ . }}" hx-trigger="load" hx-swap="outerHTML"></div>
+{{- end }}
 
 {{/*
 listing: .Columns, .Entries, .Parent, .Summary, .Watch, .Filter

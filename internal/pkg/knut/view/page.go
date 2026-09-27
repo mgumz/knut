@@ -46,7 +46,14 @@ var pages = template.Must(template.New("knut").Funcs(funcs).Parse(knutHTML))
 // presentation decision, so the block which shows one makes it - the go
 // side hands over the number. the same goes for the uri of a page and the
 // code drawn from it, and for the icon.
-var funcs = template.FuncMap{"humansize": humanSize, "qrcode": qrCode, "qrscript": qrScript, "keysscript": keysScript, "icon": iconURI}
+var funcs = template.FuncMap{
+	"humansize":  humanSize,
+	"qrcode":     qrCode,
+	"qrscript":   qrScript,
+	"keysscript": keysScript,
+	"icon":       iconURI,
+	"alivequery": aliveQuery,
+}
 
 // Page carries what the "layout" block needs. Page specific data embeds
 // it, so a "content" template reaches both its own fields and the ones
@@ -63,6 +70,7 @@ type Page struct {
 	Path     string // the uri this page was asked for, empty without a request
 	URL      string // the same uri with scheme and host in front
 	Index    string // the index, relative to this page - empty without one
+	Watched  bool   // the content polls on its own, which notices a gone knut
 }
 
 // NewPage frames "heading" - an empty one renders the bare knut title.

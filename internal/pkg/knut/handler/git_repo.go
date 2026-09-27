@@ -127,7 +127,7 @@ func gitRepoPage(w http.ResponseWriter, r *http.Request, gitBinary, gitDir strin
 
 	repo.Page = view.PageFor(r, view.RequestPath(r))
 	repo.Clone = view.AbsoluteURL(r)
-	repo.Watch = watch
+	repo.Watch, repo.Watched = watch, watch != ""
 	repo.Newer, repo.Latest = gitLogNewer(from, skip)
 
 	view.WriteFor(w, r, gitRepoTmpl, repo)

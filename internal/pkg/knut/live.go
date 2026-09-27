@@ -8,3 +8,8 @@ package knut
 // free: it is dotted and namespaced to stay out of the way, and a mapping
 // claiming it is warned about at startup.
 const LiveAssetURI = "/.knut/htmx.js"
+
+// LiveAliveQuery is the one query knut reserves for itself, on any uri
+// and only while "-live" is given: a page with nothing to watch holds it
+// open, so it notices when knut is gone. namespaced like the uri.
+const LiveAliveQuery = "knut-alive"

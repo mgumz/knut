@@ -64,7 +64,7 @@ func gitListPage(w http.ResponseWriter, r *http.Request, gitBinary, dir string, 
 	}
 
 	list.Page = view.PageFor(r, view.RequestPath(r))
-	list.Watch = watch
+	list.Watch, list.Watched = watch, watch != ""
 	if parent {
 		list.Parent = "../"
 	}

@@ -9,6 +9,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/mgumz/knut/internal/pkg/knut"
@@ -151,10 +152,16 @@ func schemeHandler(treeURL *url.URL, window string) (http.Handler, bool) {
 		qrContent = qrContent[1:] // cut away the leading /
 		handler := kh.QrHandler(qrContent)
 		return kh.SetContentType(handler, "image/png"), false
-	case "git":
-		return kh.GitHandler(knut.LocalFilename(treeURL), window), false
-	case "cgit":
-		return kh.CgitHandler(knut.LocalFilename(treeURL), window), false
+	case "git", "cgit":
+		binary, err := exec.LookPath(treeURL.Scheme)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "warning: %s:// needs %q: %v\n", treeURL.Scheme, treeURL.Scheme, err)
+			return nil, true
+		}
+		if treeURL.Scheme == "cgit" {
+			return kh.CgitHandler(binary, knut.LocalFilename(treeURL), window), false
+		}
+		return kh.GitHandler(binary, knut.LocalFilename(treeURL), window), false
 	case "tar":
 		prefix := query.Get("prefix")
 		handler := kh.TarHandler(knut.LocalFilename(treeURL), prefix)

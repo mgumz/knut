@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -411,7 +410,7 @@ func gitArchive(w http.ResponseWriter, r *http.Request, gitBinary, gitDir string
 	w.Header().Set("Content-Type", "application/zip")
 	w.Header().Set("Content-Disposition", zipDisposition(base))
 
-	cmd := exec.CommandContext(r.Context(), gitBinary, "--git-dir="+gitDir,
+	cmd := gitCommand(r.Context(), gitBinary, gitDir,
 		"archive", "--format=zip", "--prefix="+base+"/", commit)
 	cmd.Stdout = w
 

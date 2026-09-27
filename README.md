@@ -179,6 +179,9 @@ browser:
   everything else gets the page
 * a working tree (`knut/.git`) and a bare repository (`knut.git/`) both
   have a page
+* mapping a folder trusts the repositories in it, whoever owns them: git
+  refuses a repository of another user ("dubious ownership"), knut tells
+  it `safe.directory` for everything below the mapping
 * a folder holding repositories lists them: the branch `HEAD` is on, the
   date and subject of its commit. folders one level down which hold
   repositories of their own (`org/repo.git`) are listed as folders. a
@@ -187,6 +190,10 @@ browser:
   ref: `git archive` packs it, named after the repository and the ref -
   `curl -OJ 'http://host:8080/g/knut/?zip&ref=v1.0'`
 * with `-live` both pages follow commits, pushes, new branches and tags
+* `git push` is not a feature: `git http-backend` refuses it. a
+  repository with `http.receivepack = true` in its own config accepts it
+  anyway, from anyone who reaches knut - knut checks nothing of what is
+  pushed, so don't set it on a published repository
 * browsing trees, files and diffs is left to `cgit://`
 
 ## Live Views

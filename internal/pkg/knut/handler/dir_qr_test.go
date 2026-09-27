@@ -242,8 +242,8 @@ func TestHeaderQRDialogOnEveryPage(t *testing.T) {
 		"listing": get(DirListHandler(testFS()), "/").Body.String(),
 		"zip":     get(ZipFSHandler(testZip(t), "", ""), "/").Body.String(),
 		"upload":  get(UploadHandler(t.TempDir()), "/upload").Body.String(),
-		"git":     get(GitHandler(testRepos(t), "/"), "/one/").Body.String(),
-		"repos":   get(GitHandler(testRepos(t), "/"), "/").Body.String(),
+		"git":     get(GitHandler(gitBin, testRepos(t), "/"), "/one/").Body.String(),
+		"repos":   get(GitHandler(gitBin, testRepos(t), "/"), "/").Body.String(),
 	}
 
 	for page, body := range pages {

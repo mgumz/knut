@@ -194,3 +194,17 @@ func TestListingLinksResolveBelowTheWindow(t *testing.T) {
 		t.Errorf("got status %d for the linked file, want %d", rec.Code, http.StatusOK)
 	}
 }
+
+// without the binary a "git://" or "cgit://" mapping would answer every
+// request with a bare 500: it is skipped at startup instead, with a warning.
+func TestGitMappingWithoutBinaryIsSkipped(t *testing.T) {
+
+	t.Setenv("PATH", t.TempDir())
+	root := t.TempDir()
+
+	for _, mapping := range []string{"/g:git://" + root, "/c:cgit://" + root} {
+		if _, windows := prepareTrees(http.NewServeMux(), []string{mapping}); len(windows) != 0 {
+			t.Errorf("%s: got windows %v, want the mapping skipped", mapping, windows)
+		}
+	}
+}

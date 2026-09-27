@@ -43,18 +43,12 @@ var gitBackendPath = regexp.MustCompile(`(^|/)(` +
 // the uri a clone is made from - git asks below it for paths of its own,
 // see gitBackendPath - so the url in the address bar is the one to clone.
 //
+// "gitBinary" is the git to run, found by the caller.
+//
 // see https://git-scm.com/docs/git-http-backend
-func GitHandler(path, uri string) http.Handler {
+func GitHandler(gitBinary, path, uri string) http.Handler {
 
-	gitBinary, _ := exec.LookPath("git")
-	gitHandler := new(cgi.Handler)
-	gitHandler.Dir = path
-	gitHandler.Root = uri
-	gitHandler.Path = gitBinary
-	gitHandler.Args = []string{"http-backend"}
-	gitHandler.Env = []string{
-		"GIT_PROJECT_ROOT=" + path,
-		"GIT_HTTP_EXPORT_ALL=1"}
+	gitHandler := gitBackend(gitBinary, path, uri)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -66,6 +60,30 @@ func GitHandler(path, uri string) http.Handler {
 
 		gitPage(w, r, gitBinary, path, rel)
 	})
+}
+
+// gitBackend runs "git http-backend" on the repositories below "path".
+//
+// mapping a folder is trusting what is in it: the backend is told so via
+// safe.directory, else it refuses a repository owned by another user than
+// the one knut runs as ("dubious ownership") while the pages, which name
+// the repository outright, show it anyway. "*" reaches no further than
+// GIT_PROJECT_ROOT, the backend enters nothing outside of it. the setting
+// travels in GIT_CONFIG_*, the one place besides the system and the global
+// config git takes it from.
+func gitBackend(gitBinary, path, uri string) *cgi.Handler {
+	return &cgi.Handler{
+		Dir:  path,
+		Root: uri,
+		Path: gitBinary,
+		Args: []string{"http-backend"},
+		Env: []string{
+			"GIT_PROJECT_ROOT=" + path,
+			"GIT_HTTP_EXPORT_ALL=1",
+			"GIT_CONFIG_COUNT=1",
+			"GIT_CONFIG_KEY_0=safe.directory",
+			"GIT_CONFIG_VALUE_0=*"},
+	}
 }
 
 // gitPage answers "r" with the page of what sits at "rel" below "root": a
@@ -127,14 +145,26 @@ func exists(name string) bool {
 // the arguments go to git as they are, no shell in between.
 func runGit(ctx context.Context, gitBinary, gitDir string, args ...string) ([]byte, error) {
 
-	cmd := exec.CommandContext(ctx, gitBinary, append([]string{"--git-dir=" + gitDir}, args...)...)
-	out, err := cmd.Output()
+	out, err := gitCommand(ctx, gitBinary, gitDir, args...).Output()
 
 	if exitErr := (*exec.ExitError)(nil); errors.As(err, &exitErr) {
 		return nil, fmt.Errorf("git %s: %v: %s", args[0], err, bytes.TrimSpace(exitErr.Stderr))
 	}
 
 	return out, err
+}
+
+// gitCommand is git on the repository "gitDir", reading the config of the
+// system and of the repository - what "git http-backend" reads, see
+// gitBackend. the global one belongs to whoever runs knut: it is set up
+// for working in repositories, and some of it changes what knut parses
+// (log.showSignature, i18n.logOutputEncoding).
+func gitCommand(ctx context.Context, gitBinary, gitDir string, args ...string) *exec.Cmd {
+
+	cmd := exec.CommandContext(ctx, gitBinary, append([]string{"--git-dir=" + gitDir}, args...)...)
+	cmd.Env = append(os.Environ(), "GIT_CONFIG_GLOBAL="+os.DevNull)
+
+	return cmd
 }
 
 func gitLines(out []byte) []string {
@@ -178,9 +208,9 @@ func gitState(outputs ...[]byte) string {
 //	knut.git/.git/cgitrc
 //	                    desc=knut - throws trees out of windows
 //
-// will make that directory be listed with that description.
-func CgitHandler(path, uri string) http.Handler {
-	cgitBinary, _ := exec.LookPath("cgit")
+// will make that directory be listed with that description. "cgitBinary"
+// is the cgit to run, found by the caller.
+func CgitHandler(cgitBinary, path, uri string) http.Handler {
 	cgitHandler := new(cgi.Handler)
 	cgitHandler.Dir = path
 	cgitHandler.Root = uri

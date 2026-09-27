@@ -5,6 +5,7 @@ package handler
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -14,6 +15,10 @@ import (
 	"testing"
 	"time"
 )
+
+// gitBin is the git the handlers under test run. the tests which need
+// one skip without it, see gitSetup.
+var gitBin, _ = exec.LookPath("git")
 
 // gitIn runs git in "dir" with a fixed identity and clock, and no config
 // of the machine the test runs on.
@@ -91,7 +96,7 @@ func testRepos(t *testing.T) string {
 // a browser asking for a repository gets its page
 func TestGitSummary(t *testing.T) {
 
-	rec := get(GitHandler(testRepos(t), "/uri/"), "/uri/one/")
+	rec := get(GitHandler(gitBin, testRepos(t), "/uri/"), "/uri/one/")
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("got status %d, want %d", rec.Code, http.StatusOK)
@@ -119,7 +124,7 @@ func TestGitSummary(t *testing.T) {
 func TestGitSummaryTagPointsAtCommit(t *testing.T) {
 
 	root := testRepos(t)
-	body := get(GitHandler(root, "/"), "/one/").Body.String()
+	body := get(GitHandler(gitBin, root, "/"), "/one/").Body.String()
 
 	head, err := exec.Command("git", "-C", filepath.Join(root, "one"), "rev-parse", "--short", "HEAD").Output()
 	if err != nil {
@@ -143,9 +148,9 @@ func TestGitSummaryBareAndSingle(t *testing.T) {
 		handler http.Handler
 		target  string
 	}{
-		{GitHandler(root, "/uri/"), "/uri/bare.git/"},
-		{GitHandler(filepath.Join(root, "one"), "/uri/"), "/uri/"},
-		{GitHandler(filepath.Join(root, "bare.git"), "/"), "/"},
+		{GitHandler(gitBin, root, "/uri/"), "/uri/bare.git/"},
+		{GitHandler(gitBin, filepath.Join(root, "one"), "/uri/"), "/uri/"},
+		{GitHandler(gitBin, filepath.Join(root, "bare.git"), "/"), "/"},
 	} {
 		body := get(tc.handler, tc.target).Body.String()
 		if !strings.Contains(body, "2 commits") {
@@ -156,7 +161,7 @@ func TestGitSummaryBareAndSingle(t *testing.T) {
 
 func TestGitSummaryEmpty(t *testing.T) {
 
-	rec := get(GitHandler(testRepos(t), "/"), "/empty/")
+	rec := get(GitHandler(gitBin, testRepos(t), "/"), "/empty/")
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("got status %d, want %d", rec.Code, http.StatusOK)
@@ -172,7 +177,7 @@ func TestGitSummaryEmpty(t *testing.T) {
 func TestGitSummaryNotARepository(t *testing.T) {
 
 	root := testRepos(t)
-	handler := GitHandler(filepath.Join(root, "plain"), "/")
+	handler := GitHandler(gitBin, filepath.Join(root, "plain"), "/")
 
 	for _, target := range []string{"/", "/nope/", "/../one/"} {
 		if rec := get(handler, target); rec.Code != http.StatusNotFound {
@@ -180,7 +185,7 @@ func TestGitSummaryNotARepository(t *testing.T) {
 		}
 	}
 
-	handler = GitHandler(root, "/")
+	handler = GitHandler(gitBin, root, "/")
 	for _, target := range []string{"/plain/", "/one/sub/", "/one/sub/a.txt"} {
 		if rec := get(handler, target); rec.Code != http.StatusNotFound {
 			t.Errorf("%q: got status %d, want %d", target, rec.Code, http.StatusNotFound)
@@ -191,7 +196,7 @@ func TestGitSummaryNotARepository(t *testing.T) {
 // the page is a folder, like a listing
 func TestGitSummaryRedirectsToFolder(t *testing.T) {
 
-	rec := get(GitHandler(testRepos(t), "/uri/"), "/uri/one?x=1")
+	rec := get(GitHandler(gitBin, testRepos(t), "/uri/"), "/uri/one?x=1")
 
 	if rec.Code != http.StatusMovedPermanently {
 		t.Fatalf("got status %d, want %d", rec.Code, http.StatusMovedPermanently)
@@ -205,7 +210,7 @@ func TestGitSummaryRedirectsToFolder(t *testing.T) {
 // clone from is the one in the address bar there
 func TestGitSummaryCloneOnLoopback(t *testing.T) {
 
-	body := getFrom(GitHandler(testRepos(t), "/"), "/one/", "localhost:8080").Body.String()
+	body := getFrom(GitHandler(gitBin, testRepos(t), "/"), "/one/", "localhost:8080").Body.String()
 
 	if !strings.Contains(body, "git clone http://localhost:8080/one/") {
 		t.Error("the page on a loopback host offers no url to clone")
@@ -215,13 +220,46 @@ func TestGitSummaryCloneOnLoopback(t *testing.T) {
 // git itself asks below the page, and is answered by git
 func TestGitBackendAnswersGit(t *testing.T) {
 
-	rec := get(GitHandler(testRepos(t), "/uri/"), "/uri/one/info/refs?service=git-upload-pack")
+	rec := get(GitHandler(gitBin, testRepos(t), "/uri/"), "/uri/one/info/refs?service=git-upload-pack")
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("got status %d, want %d", rec.Code, http.StatusOK)
 	}
 	if got, want := rec.Header().Get("Content-Type"), "application/x-git-upload-pack-advertisement"; got != want {
 		t.Errorf("got content type %q, want %q", got, want)
+	}
+}
+
+// the global config of whoever runs knut stays out of what the page reads
+func TestGitPageIgnoresGlobalConfig(t *testing.T) {
+
+	root := testRepos(t)
+	gitIn(t, filepath.Join(root, "one"), "commit", "-q", "--allow-empty", "-m", "grün")
+
+	global := filepath.Join(t.TempDir(), "gitconfig")
+	if err := os.WriteFile(global, []byte("[i18n]\n\tlogOutputEncoding = ISO-8859-1\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("GIT_CONFIG_GLOBAL", global)
+
+	if body := get(GitHandler(gitBin, root, "/"), "/one/").Body.String(); !strings.Contains(body, ">grün</td>") {
+		t.Error("the subject is not read as utf-8")
+	}
+}
+
+// a repository owned by another user than the one knut runs as is served
+// all the same: git has a switch to pretend exactly that.
+func TestGitBackendAnswersForeignOwner(t *testing.T) {
+
+	backend := gitBackend(gitBin, testRepos(t), "/uri/")
+	backend.Env = append(backend.Env, "GIT_TEST_ASSUME_DIFFERENT_OWNER=1")
+	backend.Stderr = io.Discard
+
+	for _, repo := range []string{"one", "bare.git"} {
+		rec := get(backend, "/uri/"+repo+"/info/refs?service=git-upload-pack")
+		if rec.Code != http.StatusOK {
+			t.Errorf("%s: got status %d, want %d", repo, rec.Code, http.StatusOK)
+		}
 	}
 }
 
@@ -262,7 +300,7 @@ func TestGitList(t *testing.T) {
 	root := testRepos(t)
 	gitIn(t, filepath.Join(root, "one"), "init", "-q", "nested")
 
-	rec := get(GitHandler(root, "/uri/"), "/uri/")
+	rec := get(GitHandler(gitBin, root, "/uri/"), "/uri/")
 	if rec.Code != http.StatusOK {
 		t.Fatalf("got status %d, want %d", rec.Code, http.StatusOK)
 	}
@@ -298,7 +336,7 @@ func TestGitListFolders(t *testing.T) {
 	}
 	gitIn(t, org, "clone", "-q", "--bare", "../one", "one.git")
 
-	handler := GitHandler(root, "/")
+	handler := GitHandler(gitBin, root, "/")
 
 	body := get(handler, "/").Body.String()
 	if !strings.Contains(body, `<a href="org/">org/</a></td>
@@ -327,7 +365,7 @@ func zipNamesOf(t *testing.T, body []byte) string {
 // it - a bare one without its ".git"
 func TestGitZip(t *testing.T) {
 
-	handler := GitHandler(testRepos(t), "/uri/")
+	handler := GitHandler(gitBin, testRepos(t), "/uri/")
 
 	for target, want := range map[string]string{
 		"/uri/one/?zip":      "one/ one/sub/ one/sub/a.txt",
@@ -350,7 +388,7 @@ func TestGitZip(t *testing.T) {
 // a ref names what is taken along, and the download is named after it too
 func TestGitZipOfRef(t *testing.T) {
 
-	handler := GitHandler(testRepos(t), "/")
+	handler := GitHandler(gitBin, testRepos(t), "/")
 
 	rec := get(handler, "/one/?zip&ref=v1.0")
 	if rec.Code != http.StatusOK {
@@ -373,7 +411,7 @@ func TestGitZipOfRef(t *testing.T) {
 func TestGitZipMissing(t *testing.T) {
 
 	root := testRepos(t)
-	handler := GitHandler(root, "/")
+	handler := GitHandler(gitBin, root, "/")
 	out := filepath.Join(root, "out.zip")
 
 	for _, target := range []string{
@@ -411,7 +449,7 @@ func TestGitLiveHoldsUntilCommit(t *testing.T) {
 	livePace(t, 5*time.Second)
 
 	root := testRepos(t)
-	handler := GitHandler(root, "/")
+	handler := GitHandler(gitBin, root, "/")
 
 	for _, page := range []string{"/one/", "/"} {
 
@@ -446,7 +484,7 @@ func TestGitLiveAnswersStaleState(t *testing.T) {
 	liveMode(t)
 	livePace(t, time.Minute)
 
-	handler := GitHandler(testRepos(t), "/")
+	handler := GitHandler(gitBin, testRepos(t), "/")
 
 	for _, target := range []string{"/one/?live=notwhatisthere", "/?live=notwhatisthere"} {
 		done := make(chan int, 1)
@@ -466,7 +504,7 @@ func TestGitLiveAnswersStaleState(t *testing.T) {
 // without -live a git page does not poll
 func TestGitNotLive(t *testing.T) {
 
-	handler := GitHandler(testRepos(t), "/")
+	handler := GitHandler(gitBin, testRepos(t), "/")
 
 	for _, page := range []string{"/one/", "/"} {
 		if body := get(handler, page).Body.String(); gitLiveURL.MatchString(body) {
@@ -499,7 +537,7 @@ func TestGitLogFirstBatch(t *testing.T) {
 	root := testRepos(t)
 	head := gitLong(t, root)
 
-	body := get(GitHandler(root, "/"), "/one/").Body.String()
+	body := get(GitHandler(gitBin, root, "/"), "/one/").Body.String()
 
 	if got := strings.Count(body, `<td class="name" title="c`); got != 50 {
 		t.Errorf("the page shows %d commits, want 50", got)
@@ -523,7 +561,7 @@ func TestGitLogBatches(t *testing.T) {
 
 	root := testRepos(t)
 	head := gitLong(t, root)
-	handler := GitHandler(root, "/")
+	handler := GitHandler(gitBin, root, "/")
 
 	body := getHX(handler, "/one/?log&from="+head+"&skip=50").Body.String()
 
@@ -566,7 +604,7 @@ func TestGitLogBatchIsPinned(t *testing.T) {
 
 	root := testRepos(t)
 	head := gitLong(t, root)
-	handler := GitHandler(root, "/")
+	handler := GitHandler(gitBin, root, "/")
 
 	before := getHX(handler, "/one/?log&from="+head+"&skip=50").Body.String()
 	gitIn(t, filepath.Join(root, "one"), "commit", "-q", "--allow-empty", "-m", "late")
@@ -586,7 +624,7 @@ func TestGitLogOlderPage(t *testing.T) {
 	root := testRepos(t)
 	head := gitLong(t, root)
 
-	body := get(GitHandler(root, "/"), "/one/?from="+head+"&skip=50").Body.String()
+	body := get(GitHandler(gitBin, root, "/"), "/one/?from="+head+"&skip=50").Body.String()
 
 	for _, want := range []string{
 		"<!doctype html>",
@@ -613,7 +651,7 @@ func TestGitLogWindowRefused(t *testing.T) {
 
 	root := testRepos(t)
 	head := gitLong(t, root)
-	handler := GitHandler(root, "/")
+	handler := GitHandler(gitBin, root, "/")
 	out := filepath.Join(root, "out")
 
 	for _, target := range []string{
@@ -639,7 +677,7 @@ func TestGitLiveKeepsScrolledLog(t *testing.T) {
 
 	liveMode(t)
 
-	body := get(GitHandler(testRepos(t), "/"), "/one/").Body.String()
+	body := get(GitHandler(gitBin, testRepos(t), "/"), "/one/").Body.String()
 
 	for _, want := range []string{
 		`hx-on::before-swap="if (event.detail.target === this && this.querySelector('tr.older'))`,
@@ -657,7 +695,7 @@ func TestGitLogNewer(t *testing.T) {
 
 	root := testRepos(t)
 	head := gitLong(t, root)
-	handler := GitHandler(root, "/")
+	handler := GitHandler(gitBin, root, "/")
 
 	for target, want := range map[string][]string{
 		"/one/": nil,

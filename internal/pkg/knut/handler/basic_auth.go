@@ -18,7 +18,7 @@ func BasicAuthHandler(next http.Handler, username, password string) http.Handler
 		if ok && rUser == username && password == rPassword {
 			next.ServeHTTP(w, r)
 		} else {
-			view.Status(w, http.StatusUnauthorized)
+			view.Status(w, r, http.StatusUnauthorized)
 		}
 	})
 }

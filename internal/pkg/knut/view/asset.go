@@ -44,7 +44,7 @@ func AssetHandler(next http.Handler) http.Handler {
 		switch r.Method {
 		case http.MethodGet, http.MethodHead:
 		default:
-			Status(w, http.StatusMethodNotAllowed)
+			Status(w, r, http.StatusMethodNotAllowed)
 			return
 		}
 

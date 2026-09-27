@@ -55,10 +55,10 @@ func gitListPage(w http.ResponseWriter, r *http.Request, gitBinary, dir string, 
 	list, watch, err := view.Poll(r, dirs, read)
 	switch {
 	case errors.Is(err, errNoRepos):
-		view.Status(w, http.StatusNotFound)
+		view.Status(w, r, http.StatusNotFound)
 		return
 	case err != nil:
-		view.Status(w, http.StatusInternalServerError)
+		view.Status(w, r, http.StatusInternalServerError)
 		fmt.Fprintf(os.Stderr, "error: %q: %v\n", dir, err)
 		return
 	}

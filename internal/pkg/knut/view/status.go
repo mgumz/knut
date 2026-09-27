@@ -12,15 +12,21 @@ import (
 var statusTmpl = Template("status")
 
 // Status renders the given status code and a text associated with that
-// code.
-func Status(w http.ResponseWriter, code int) {
+// code, framed like the page "r" asked for: its path as the heading, its
+// code in the header. without a request the page is the bare knut one.
+func Status(w http.ResponseWriter, r *http.Request, code int) {
+
+	page := NewPage("")
+	if r != nil {
+		page = PageFor(r, RequestPath(r))
+	}
 
 	status := struct {
 		Page
 		Code int
 		Text string
 	}{
-		Page: NewPage(""),
+		Page: page,
 		Code: code,
 		Text: http.StatusText(code),
 	}

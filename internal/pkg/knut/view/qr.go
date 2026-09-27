@@ -52,13 +52,13 @@ func QRImage(w http.ResponseWriter, r *http.Request) {
 
 	url := requestURL(r)
 	if url == "" {
-		Status(w, http.StatusNotFound)
+		Status(w, r, http.StatusNotFound)
 		return
 	}
 
 	png, err := qrcode.Encode(url, qrcode.Medium, qrLargePixels)
 	if err != nil {
-		Status(w, http.StatusInternalServerError)
+		Status(w, r, http.StatusInternalServerError)
 		return
 	}
 

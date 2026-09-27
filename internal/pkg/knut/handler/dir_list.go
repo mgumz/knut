@@ -36,7 +36,7 @@ func DirListHandler(fsys http.FileSystem) http.Handler {
 
 		dir, err := fsys.Open(name)
 		if err != nil {
-			view.Status(w, statusForError(err))
+			view.Status(w, r, statusForError(err))
 			return
 		}
 		defer dir.Close()
@@ -87,7 +87,7 @@ func DirListHandler(fsys http.FileSystem) http.Handler {
 
 		// the folder may be gone by now - it was opened above, not held
 		if err := view.Listing(w, r, read, opts); err != nil {
-			view.Status(w, statusForError(err))
+			view.Status(w, r, statusForError(err))
 		}
 	})
 }

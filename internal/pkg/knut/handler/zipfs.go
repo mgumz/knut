@@ -146,7 +146,7 @@ func ZipFSHandler(name, prefix, index string) http.Handler {
 			break
 		}
 
-		view.Status(w, http.StatusNotFound)
+		view.Status(w, r, http.StatusNotFound)
 	})
 }
 
@@ -164,7 +164,7 @@ func zipEntryQR(w http.ResponseWriter, r *http.Request, fsys fs.FS, name, report
 	defer file.Close()
 
 	if !zipHas(z, entry) {
-		view.Status(w, http.StatusNotFound)
+		view.Status(w, r, http.StatusNotFound)
 		return
 	}
 

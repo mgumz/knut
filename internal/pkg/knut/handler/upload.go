@@ -48,7 +48,7 @@ func UploadHandler(dir string) http.Handler {
 			view.WriteFor(w, r, uploadTmpl, form)
 			return
 		default:
-			view.Status(w, http.StatusMethodNotAllowed)
+			view.Status(w, r, http.StatusMethodNotAllowed)
 			return
 		}
 
@@ -56,7 +56,7 @@ func UploadHandler(dir string) http.Handler {
 		r.ParseMultipartForm(4096)
 
 		if r.MultipartForm == nil {
-			view.Status(w, http.StatusBadRequest)
+			view.Status(w, r, http.StatusBadRequest)
 			return
 		}
 

@@ -208,3 +208,53 @@ func TestGitMappingWithoutBinaryIsSkipped(t *testing.T) {
 		}
 	}
 }
+
+// what no mapping claims gets the knut 404 page, not the plain text of the
+// muxer - unless a mapping at "/" claims everything
+func TestUnmappedIsKnutNotFound(t *testing.T) {
+
+	root := t.TempDir()
+	name := filepath.Join(root, "ding.txt")
+	if err := os.WriteFile(name, []byte("dong"), 0600); err != nil {
+		t.Fatalf("writing ding.txt: %v", err)
+	}
+
+	muxer, windows := prepareTrees(http.NewServeMux(), []string{"/ding.txt:" + name})
+	serveNotFound(muxer, windows)
+
+	for _, target := range []string{"/unmapped", "/ding.txt/x"} {
+		rec := httptest.NewRecorder()
+		muxer.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, target, nil))
+		if rec.Code != http.StatusNotFound {
+			t.Errorf("%q: got status %d, want %d", target, rec.Code, http.StatusNotFound)
+		}
+		if body := rec.Body.String(); !strings.Contains(body, "<h1>"+target+"</h1>") {
+			t.Errorf("%q: not the knut 404 page: %q", target, body)
+		}
+	}
+
+	muxer, windows = prepareTrees(http.NewServeMux(), []string{"/:" + root})
+	serveNotFound(muxer, windows) // would panic on a second "/"
+}
+
+// the index sits at "/" alone: a path below it which no mapping claims is
+// a 404, not the index
+func TestIndexAnswersRootOnly(t *testing.T) {
+
+	root := t.TempDir()
+	muxer, windows := prepareTrees(http.NewServeMux(), []string{"/d/:" + root})
+	serveIndex(muxer, windows)
+	serveNotFound(muxer, windows)
+
+	for target, want := range map[string]int{
+		"/":         http.StatusOK,
+		"/unmapped": http.StatusNotFound,
+		"/d/":       http.StatusOK,
+	} {
+		rec := httptest.NewRecorder()
+		muxer.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, target, nil))
+		if rec.Code != want {
+			t.Errorf("%q: got status %d, want %d", target, rec.Code, want)
+		}
+	}
+}

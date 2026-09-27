@@ -84,7 +84,7 @@ func NewPage(heading string) Page {
 // PageFor frames "heading" for the request which asked for it. a page
 // which knows its own uri carries a code pointing at it and can knock on
 // it when the connection breaks; the ones knut renders without a request
-// in hand - the status pages - carry neither.
+// in hand - a status page when rendering failed - carry neither.
 func PageFor(r *http.Request, heading string) Page {
 
 	page := NewPage(heading)
@@ -156,7 +156,7 @@ func WriteFor(w http.ResponseWriter, r *http.Request, tmpl *template.Template, d
 func WriteStatus(w http.ResponseWriter, code int, tmpl *template.Template, data any) {
 	body, err := Render(tmpl, data)
 	if err != nil {
-		Status(w, http.StatusInternalServerError)
+		Status(w, nil, http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

@@ -48,7 +48,7 @@ func zipFSFolder(w http.ResponseWriter, r *http.Request, fsys fs.FS, name, repor
 	defer file.Close()
 
 	if !zipHas(z, folder) {
-		view.Status(w, http.StatusNotFound)
+		view.Status(w, r, http.StatusNotFound)
 		return
 	}
 

@@ -96,7 +96,7 @@ func gitRepoPage(w http.ResponseWriter, r *http.Request, gitBinary, gitDir strin
 
 	from, skip, ok := gitLogWindow(r, gitBinary, gitDir)
 	if !ok {
-		view.Status(w, http.StatusNotFound)
+		view.Status(w, r, http.StatusNotFound)
 		return
 	}
 
@@ -120,7 +120,7 @@ func gitRepoPage(w http.ResponseWriter, r *http.Request, gitBinary, gitDir strin
 		repo, _, err = read()
 	}
 	if err != nil {
-		view.Status(w, http.StatusInternalServerError)
+		view.Status(w, r, http.StatusInternalServerError)
 		fmt.Fprintf(os.Stderr, "error: %q: %v\n", gitDir, err)
 		return
 	}
@@ -178,7 +178,7 @@ func gitLogBatch(w http.ResponseWriter, r *http.Request, gitBinary, gitDir, from
 
 	commits, _, err := readGitLog(r.Context(), gitBinary, gitDir, from, skip)
 	if err != nil {
-		view.Status(w, http.StatusInternalServerError)
+		view.Status(w, r, http.StatusInternalServerError)
 		fmt.Fprintf(os.Stderr, "error: %q: %v\n", gitDir, err)
 		return
 	}
@@ -398,7 +398,7 @@ func gitArchive(w http.ResponseWriter, r *http.Request, gitBinary, gitDir string
 
 	commit, ok := gitCommitOf(r.Context(), gitBinary, gitDir, ref)
 	if !ok {
-		view.Status(w, http.StatusNotFound)
+		view.Status(w, r, http.StatusNotFound)
 		return
 	}
 

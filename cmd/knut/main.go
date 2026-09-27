@@ -54,6 +54,7 @@ func main() {
 	if opts.DoIndexHandler {
 		serveIndex(tree, windows)
 	}
+	serveNotFound(tree, windows)
 
 	h := buildHandlerChain(tree, opts)
 	run := makeRunner(opts, h)
@@ -75,11 +76,11 @@ func fatal(format string, a ...any) {
 	os.Exit(1)
 }
 
-// serveIndex publishes the list of mappings at "/".
+// serveIndex publishes the list of mappings at "/" - there alone, "/{$}":
+// a path below it which no mapping claims is a 404, see serveNotFound.
 //
 // a mapping already sitting at "/" keeps it: it is the more explicit wish
-// of the two, and the muxer takes exactly one handler per pattern - asking
-// it for a second one is a panic, not an error.
+// of the two.
 func serveIndex(tree *http.ServeMux, windows []string) {
 
 	if slices.Contains(windows, "/") {
@@ -87,7 +88,20 @@ func serveIndex(tree *http.ServeMux, windows []string) {
 		return
 	}
 
-	tree.Handle("/", handler.IndexHandler(windows))
+	tree.Handle("/{$}", handler.IndexHandler(windows))
+}
+
+// serveNotFound answers what no mapping claims with the knut status page,
+// instead of the plain text of the muxer. a mapping at "/" claims it all,
+// and the muxer takes exactly one handler per pattern - asking it for a
+// second one is a panic, not an error.
+func serveNotFound(tree *http.ServeMux, windows []string) {
+
+	if slices.Contains(windows, "/") {
+		return
+	}
+
+	tree.Handle("/", handler.NotFoundHandler())
 }
 
 // warnReservedWindows points out mappings live mode sits on top of: the

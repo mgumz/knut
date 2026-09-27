@@ -92,7 +92,7 @@ func gitPage(w http.ResponseWriter, r *http.Request, gitBinary, root, rel string
 
 	dir := filepath.Join(root, filepath.FromSlash(path.Clean("/"+rel)))
 	if fi, err := os.Stat(dir); err != nil || !fi.IsDir() {
-		view.Status(w, http.StatusNotFound)
+		view.Status(w, r, http.StatusNotFound)
 		return
 	}
 

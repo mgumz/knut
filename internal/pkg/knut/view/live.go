@@ -20,3 +20,10 @@ func SetLive(on bool) { live.Store(on) }
 
 // liveEnabled reports whether live mode is on.
 func liveEnabled() bool { return live.Load() }
+
+// index says the index of the mappings is served at "/", the page the
+// wordmark in the header leads to. set once, like live.
+var index atomic.Bool
+
+// SetIndex tells the pages the index is served.
+func SetIndex(on bool) { index.Store(on) }

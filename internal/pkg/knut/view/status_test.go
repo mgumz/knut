@@ -50,3 +50,44 @@ func TestStatusWithoutRequest(t *testing.T) {
 		t.Error("the status page does not carry its code")
 	}
 }
+
+func TestRootFrom(t *testing.T) {
+
+	for uri, want := range map[string]string{
+		"":             "./",
+		"/":            "./",
+		"/f.txt":       "./",
+		"/d/":          "../",
+		"/d/a.txt":     "../",
+		"/d/sub/":      "../../",
+		"/g/knut/x/y/": "../../../../",
+	} {
+		if got := rootFrom(uri); got != want {
+			t.Errorf("rootFrom(%q) = %q, want %q", uri, got, want)
+		}
+	}
+}
+
+// the wordmark leads to the index where there is one, and is plain text
+// where there is none
+func TestWordmarkLeadsToIndex(t *testing.T) {
+
+	render := func() string {
+		req := httptest.NewRequest(http.MethodGet, "/d/sub/", nil)
+		req.Header.Set("Accept", "text/html")
+		rec := httptest.NewRecorder()
+		Status(rec, req, http.StatusNotFound)
+		return rec.Body.String()
+	}
+
+	if body := render(); !strings.Contains(body, `<span class="wordmark">knut</span>`) {
+		t.Error("without an index the wordmark is not plain text")
+	}
+
+	SetIndex(true)
+	t.Cleanup(func() { SetIndex(false) })
+
+	if body := render(); !strings.Contains(body, `<a class="wordmark" href="../../">knut</a>`) {
+		t.Error("the wordmark does not lead to the index")
+	}
+}

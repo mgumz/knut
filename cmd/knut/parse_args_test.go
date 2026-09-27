@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/mgumz/knut/internal/pkg/knut/view"
 )
 
 // a folder mapped without a trailing "/" has to end up as a subtree
@@ -244,6 +246,7 @@ func TestIndexAnswersRootOnly(t *testing.T) {
 	root := t.TempDir()
 	muxer, windows := prepareTrees(http.NewServeMux(), []string{"/d/:" + root})
 	serveIndex(muxer, windows)
+	t.Cleanup(func() { view.SetIndex(false) })
 	serveNotFound(muxer, windows)
 
 	for target, want := range map[string]int{

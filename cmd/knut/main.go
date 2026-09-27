@@ -89,6 +89,7 @@ func serveIndex(tree *http.ServeMux, windows []string) {
 	}
 
 	tree.Handle("/{$}", handler.IndexHandler(windows))
+	view.SetIndex(true)
 }
 
 // serveNotFound answers what no mapping claims with the knut status page,

@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
+	"strings"
 
 	_ "embed"
 
@@ -61,6 +62,7 @@ type Page struct {
 	LiveURI  string // where the layout pulls htmx from
 	Path     string // the uri this page was asked for, empty without a request
 	URL      string // the same uri with scheme and host in front
+	Index    string // the index, relative to this page - empty without one
 }
 
 // NewPage frames "heading" - an empty one renders the bare knut title.
@@ -89,8 +91,23 @@ func PageFor(r *http.Request, heading string) Page {
 
 	page := NewPage(heading)
 	page.Path, page.URL = requestURI(r), requestURL(r)
+	if index.Load() {
+		page.Index = rootFrom(page.Path)
+	}
 
 	return page
+}
+
+// rootFrom is "/" relative to the page at "uri": a link which survives
+// whatever prefix knut is published under by a proxy in front of it.
+func rootFrom(uri string) string {
+
+	dir := uri[:strings.LastIndexByte(uri, '/')+1]
+	if depth := strings.Count(dir, "/") - 1; depth > 0 {
+		return strings.Repeat("../", depth)
+	}
+
+	return "./"
 }
 
 // Template frames the block "name" of assets/knut.html in the

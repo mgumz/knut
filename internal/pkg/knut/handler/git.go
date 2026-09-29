@@ -71,7 +71,13 @@ func GitHandler(gitBinary, path, uri string) http.Handler {
 // GIT_PROJECT_ROOT, the backend enters nothing outside of it. the setting
 // travels in GIT_CONFIG_*, the one place besides the system and the global
 // config git takes it from.
+//
+// "path" is made absolute: the backend runs inside it, and a relative
+// GIT_PROJECT_ROOT would be looked up from there a second time.
 func gitBackend(gitBinary, path, uri string) *cgi.Handler {
+	if abs, err := filepath.Abs(path); err == nil {
+		path = abs
+	}
 	return &cgi.Handler{
 		Dir:  path,
 		Root: uri,

@@ -230,6 +230,28 @@ func TestGitBackendAnswersGit(t *testing.T) {
 	}
 }
 
+// a folder given relative to where knut runs is answered by git as well
+func TestGitBackendAnswersRelativePath(t *testing.T) {
+
+	root := testRepos(t)
+
+	// t.Chdir needs go1.24
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(filepath.Dir(root)); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.Chdir(wd) })
+
+	rec := get(GitHandler(gitBin, filepath.Base(root), "/uri/"), "/uri/one/info/refs?service=git-upload-pack")
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("got status %d, want %d", rec.Code, http.StatusOK)
+	}
+}
+
 // the global config of whoever runs knut stays out of what the page reads
 func TestGitPageIgnoresGlobalConfig(t *testing.T) {
 

@@ -84,7 +84,7 @@ Logins:
   -tls-key string
         use given key to start tls
   -tls-onetime
-        use a onetime-in-memory cert+key to drive tls
+        use a self-signed in-memory cert+key, valid while knut runs, to drive tls
   -version
         print version
 

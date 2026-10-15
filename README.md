@@ -99,7 +99,7 @@ Logins:
   -tls-key string
     	use given key to start tls
   -tls-onetime
-    	use a onetime-in-memory cert+key to drive tls
+    	use a self-signed in-memory cert+key, valid while knut runs, to drive tls
   -version
     	print version
 ```
@@ -323,6 +323,42 @@ it runs: only the first request of it waits for bcrypt.
 
 Basic auth sends the password readable for anyone on the way, so use it
 over TLS.
+
+## TLS
+
+`-tls-cert` and `-tls-key` serve a certificate you already have.
+
+`-tls-onetime` makes one up at startup: a self-signed certificate and key,
+held in memory and gone when *knut* ends. A restart brings a new one.
+
+    $> knut -tls-onetime -bind 192.168.1.20:8443 /:.
+
+    tls: onetime certificate, valid while knut runs
+      sha256  3F:9A:…:C1
+              compare with the certificate details of the browser
+      pin     sha256//q1w2…=
+              curl --pinnedpubkey 'sha256//q1w2…=' -k https://192.168.1.20:8443/
+      names   192.168.1.20
+
+* the browser warns about it, because nobody it trusts signed it. Compare
+  `sha256` with the fingerprint in the certificate details of the browser
+  before accepting it: a match means the browser talks to this *knut*
+* `pin` is the hash of the public key, the form `curl --pinnedpubkey`
+  takes. With `-k` curl skips the check of the signer and holds on to the
+  pin alone
+* `names` are the names the certificate is issued for. A concrete `-bind`
+  address or name is the only one. `-bind :port` covers every address of
+  every interface (link-local ones left out), the hostname, `localhost`,
+  `127.0.0.1` and `::1`
+* it is valid from an hour before startup, so a client whose clock lags a
+  little accepts it too, and doesn't expire while *knut* runs
+* browsers speak HTTP/2 to it, so every tab of `-live` shares one
+  connection. Over plain HTTP a browser opens at most 6 connections per
+  host, and the 7th live tab waits for one of them
+
+`-show-qr` points the phone at `https://`, where the same warning waits.
+Comparing the fingerprint on a phone takes some digging in the browser
+settings.
 
 ## Build & Installing
 

@@ -6,6 +6,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -65,10 +66,15 @@ func main() {
 	serveNotFound(tree, windows)
 
 	h := buildHandlerChain(tree, opts, guard)
-	run := makeRunner(opts, h)
+	run, describeTLS := makeRunner(opts, h)
 
 	fmt.Printf("\n%s\n\nknut started on %s, be aware of the trees!\n\n",
 		knut.Tree, opts.BindAddr)
+
+	if describeTLS != nil {
+		describeTLS(os.Stdout)
+		fmt.Println()
+	}
 
 	showQR(opts)
 
@@ -194,22 +200,25 @@ func buildHandlerChain(tree *http.ServeMux, opts *knut.Opts, guard *auth.Guard) 
 	return h
 }
 
-// makeRunner returns the serve function selected by the TLS options.
-func makeRunner(opts *knut.Opts, h http.Handler) func() error {
+// makeRunner returns the serve function selected by the TLS options, and,
+// for a certificate knut made up itself, what to tell about it.
+func makeRunner(opts *knut.Opts, h http.Handler) (func() error, func(io.Writer)) {
 	switch {
 	case opts.TlsOnetime:
 		onetime := &knut.OnetimeTLS{}
 		if err := onetime.Create(opts.BindAddr); err != nil {
 			fatal("%v", err)
 		}
-		return func() error { return http.Serve(onetime.Listener, h) }
+		url := fmt.Sprintf("https://%s/", opts.BindAddr)
+		return func() error { return http.Serve(onetime.Listener, h) },
+			func(w io.Writer) { onetime.Describe(w, url) }
 	case opts.TlsCert != "" && opts.TlsKey != "":
 		return func() error {
 			server := &http.Server{Addr: opts.BindAddr, Handler: h}
 			return server.ListenAndServeTLS(opts.TlsCert, opts.TlsKey)
-		}
+		}, nil
 	default:
-		return func() error { return http.ListenAndServe(opts.BindAddr, h) }
+		return func() error { return http.ListenAndServe(opts.BindAddr, h) }, nil
 	}
 }
 

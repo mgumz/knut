@@ -15,10 +15,10 @@ import (
 // RequestLineHandler is a slog.Handler which writes the records of
 // LogRequestHandler as one tab-separated line each:
 //
-//	time  remote_ip  status  method  host+uri
+//	time  remote_ip  status  method  host+uri  duration
 //
-// that is the request log format of knut before it used slog; whoever
-// parses it keeps working. attributes it does not know are dropped.
+// duration is a Millis. attributes it does
+// not know are dropped.
 type RequestLineHandler struct {
 	mu *sync.Mutex
 	w  io.Writer
@@ -36,6 +36,7 @@ func (h *RequestLineHandler) Enabled(_ context.Context, level slog.Level) bool {
 func (h *RequestLineHandler) Handle(_ context.Context, r slog.Record) error {
 	var ip, method, host, uri string
 	var status int64
+	var took Millis
 	r.Attrs(func(a slog.Attr) bool {
 		switch a.Key {
 		case LogKeyRemoteIP:
@@ -48,11 +49,13 @@ func (h *RequestLineHandler) Handle(_ context.Context, r slog.Record) error {
 			host = a.Value.String()
 		case LogKeyURI:
 			uri = a.Value.String()
+		case LogKeyDuration:
+			took, _ = a.Value.Any().(Millis)
 		}
 		return true
 	})
-	line := fmt.Sprintf("%s\t%s\t%d\t%s\t%s%s\n",
-		r.Time.Format(time.RFC3339), ip, status, method, host, uri)
+	line := fmt.Sprintf("%s\t%s\t%d\t%s\t%s%s\t%s\n",
+		r.Time.Format(time.RFC3339), ip, status, method, host, uri, took)
 
 	h.mu.Lock()
 	defer h.mu.Unlock()

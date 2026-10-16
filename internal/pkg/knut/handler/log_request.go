@@ -4,16 +4,23 @@
 package handler
 
 import (
-	"fmt"
-	"io"
+	"log/slog"
 	"net/http"
 	"strings"
-	"time"
 )
 
-// LogRequestHandler returns a handler which logs all requests to 'writer'. it also captures
-// the status-code
-func LogRequestHandler(handler http.Handler, logWriter io.Writer) http.Handler {
+// attribute keys of a request record, see LogRequestHandler
+const (
+	LogKeyRemoteIP = "remote_ip"
+	LogKeyStatus   = "status"
+	LogKeyMethod   = "method"
+	LogKeyHost     = "host"
+	LogKeyURI      = "uri"
+)
+
+// LogRequestHandler returns a handler which logs all requests to 'logger',
+// one record per request. it also captures the status-code
+func LogRequestHandler(handler http.Handler, logger *slog.Logger) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var sc = statusCodeCapture{w: w}
@@ -21,15 +28,23 @@ func LogRequestHandler(handler http.Handler, logWriter io.Writer) http.Handler {
 		if sc.code == 0 {
 			sc.code = 200
 		}
-		portSep := strings.LastIndex(r.RemoteAddr, ":")
-		fmt.Fprintf(logWriter, "%s\t%s\t%d\t%s\t%s%s\n",
-			time.Now().Format(time.RFC3339),
-			r.RemoteAddr[:portSep],
-			sc.code,
-			r.Method,
-			r.Host,
-			r.RequestURI)
+		logger.LogAttrs(r.Context(), slog.LevelInfo, "request",
+			slog.String(LogKeyRemoteIP, remoteIP(r.RemoteAddr)),
+			slog.Int(LogKeyStatus, sc.code),
+			slog.String(LogKeyMethod, r.Method),
+			slog.String(LogKeyHost, r.Host),
+			slog.String(LogKeyURI, r.RequestURI))
 	})
+}
+
+// remoteIP cuts the port off 'addr'. an IPv6 address keeps its brackets,
+// the request line always looked like that. 'addr' without a port, as
+// some listeners hand it in, stays as it is.
+func remoteIP(addr string) string {
+	if i := strings.LastIndex(addr, ":"); i >= 0 && !strings.HasSuffix(addr, "]") {
+		return addr[:i]
+	}
+	return addr
 }
 
 type statusCodeCapture struct {

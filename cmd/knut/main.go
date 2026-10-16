@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -195,7 +196,8 @@ func buildHandlerChain(tree *http.ServeMux, opts *knut.Opts, guard *auth.Guard) 
 		h = view.AssetHandler(h)
 	}
 	if opts.DoLog {
-		h = handler.LogRequestHandler(h, os.Stdout)
+		logger := slog.New(handler.NewRequestLineHandler(os.Stdout))
+		h = handler.LogRequestHandler(h, logger)
 	}
 	if opts.DoTeeBody {
 		h = handler.FlushBodyHandler(h)

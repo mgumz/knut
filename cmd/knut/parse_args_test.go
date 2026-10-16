@@ -5,6 +5,7 @@ package main
 
 import (
 	"archive/zip"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -171,6 +172,51 @@ func TestZipFSMappingBelowRoot(t *testing.T) {
 			t.Errorf("listing of the zip does not link %q", want)
 		}
 	}
+}
+
+// a zipfs:// zip which is not there yet is warned about, the mapping stays
+func TestZipFSMappingWarnsAboutMissingZip(t *testing.T) {
+
+	root := t.TempDir()
+	tests := []struct {
+		name, want string
+	}{
+		{filepath.Join(root, "missing.zip"), "does not exist"},
+		{root, "is a directory"},
+	}
+
+	for _, test := range tests {
+		var windows []string
+		stderr := captureStderr(t, func() {
+			_, windows = prepareTrees(http.NewServeMux(), []string{"/z.zip:zipfs://" + test.name})
+		})
+		if !strings.Contains(stderr, test.want) {
+			t.Errorf("%s: got stderr %q, want %q", test.name, stderr, test.want)
+		}
+		if len(windows) != 1 {
+			t.Errorf("%s: got windows %v, want the mapping kept", test.name, windows)
+		}
+	}
+}
+
+func captureStderr(t *testing.T, f func()) string {
+	t.Helper()
+
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	orig := os.Stderr
+	os.Stderr = w
+	defer func() { os.Stderr = orig }()
+
+	f()
+	w.Close()
+	out, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(out)
 }
 
 // the listing of a folder links its entries relative, so the page has to be

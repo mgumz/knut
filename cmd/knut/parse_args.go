@@ -4,7 +4,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -180,7 +182,18 @@ func schemeHandler(treeURL *url.URL, window string) (http.Handler, bool) {
 	case "zipfs":
 		prefix := query.Get("prefix")
 		index := query.Get("index")
-		handler := kh.ZipFSHandler(knut.LocalFilename(treeURL), prefix, index)
+		name := knut.LocalFilename(treeURL)
+		// warned, not skipped: the handler opens the zip per request,
+		// one created after the start is served
+		switch fi, err := os.Stat(name); {
+		case errors.Is(err, fs.ErrNotExist):
+			fmt.Fprintf(os.Stderr, "warning: zipfs:// %q does not exist\n", name)
+		case err != nil:
+			fmt.Fprintf(os.Stderr, "warning: zipfs:// %q: %v\n", name, err)
+		case fi.IsDir():
+			fmt.Fprintf(os.Stderr, "warning: zipfs:// %q is a directory, not a zip\n", name)
+		}
+		handler := kh.ZipFSHandler(name, prefix, index)
 		// the handler looks entries up by the request path, so the window
 		// has to be off it - otherwise only a zip mapped to "/" is found
 		return http.StripPrefix(window, handler), false

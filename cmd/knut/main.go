@@ -47,6 +47,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	if opts.TlsOnetime.On && knut.IsOnetimeAttr(flag.Arg(0)) {
+		fmt.Fprintf(os.Stderr, "warning: %q is taken as a mapping, attributes go after \"=\": -tls-onetime=%s\n",
+			flag.Arg(0), flag.Arg(0))
+	}
+
 	view.SetLive(opts.DoLive)
 
 	tree, windows := prepareTrees(http.NewServeMux(), flag.Args())
@@ -204,8 +209,15 @@ func buildHandlerChain(tree *http.ServeMux, opts *knut.Opts, guard *auth.Guard) 
 // for a certificate knut made up itself, what to tell about it.
 func makeRunner(opts *knut.Opts, h http.Handler) (func() error, func(io.Writer)) {
 	switch {
-	case opts.TlsOnetime:
-		onetime := &knut.OnetimeTLS{}
+	case opts.TlsOnetime.On:
+		onetime := &knut.OnetimeTLS{Attrs: opts.TlsOnetime}
+		if opts.TlsOnetime.Keep {
+			dir, err := knut.KeepDir()
+			if err != nil {
+				fatal("-tls-onetime=keep: %v", err)
+			}
+			onetime.Dir = dir
+		}
 		if err := onetime.Create(opts.BindAddr); err != nil {
 			fatal("%v", err)
 		}
@@ -232,7 +244,7 @@ func showQR(opts *knut.Opts) {
 	}
 
 	proto := "http"
-	if opts.TlsOnetime || opts.TlsCert != "" {
+	if opts.TlsOnetime.On || opts.TlsCert != "" {
 		proto = "https"
 	}
 

@@ -3,9 +3,13 @@ package knut
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"flag"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 )
@@ -42,7 +46,7 @@ func TestCertNames(t *testing.T) {
 }
 
 func TestOnetimeTLSCertificate(t *testing.T) {
-	ot := createOnetimeTLS(t)
+	ot := createOnetimeTLS(t, &OnetimeTLS{})
 	cert := ot.Cert
 
 	if !cert.NotBefore.Before(time.Now().Add(-clockSkew + time.Minute)) {
@@ -66,7 +70,7 @@ func TestOnetimeTLSCertificate(t *testing.T) {
 }
 
 func TestOnetimeTLSHandshake(t *testing.T) {
-	ot := createOnetimeTLS(t)
+	ot := createOnetimeTLS(t, &OnetimeTLS{})
 	addr := ot.Listener.Addr().String()
 
 	srv := &http.Server{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -117,12 +121,130 @@ func TestOnetimeTLSHandshake(t *testing.T) {
 	})
 }
 
-func createOnetimeTLS(t *testing.T) *OnetimeTLS {
+func createOnetimeTLS(t *testing.T, ot *OnetimeTLS) *OnetimeTLS {
 	t.Helper()
-	ot := &OnetimeTLS{}
 	if err := ot.Create("127.0.0.1:0"); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { ot.Listener.Close() })
 	return ot
+}
+
+func TestOnetimeAttrsSet(t *testing.T) {
+	tests := []struct {
+		value string
+		want  OnetimeAttrs
+	}{
+		{"true", OnetimeAttrs{On: true}},
+		{"false", OnetimeAttrs{}},
+		{"keep", OnetimeAttrs{On: true, Keep: true}},
+		{"for=30d", OnetimeAttrs{On: true, For: 30 * 24 * time.Hour}},
+		{"for=12h,keep", OnetimeAttrs{On: true, Keep: true, For: 12 * time.Hour}},
+	}
+	for _, test := range tests {
+		var got OnetimeAttrs
+		if err := got.Set(test.value); err != nil {
+			t.Errorf("%q: %v", test.value, err)
+		} else if got != test.want {
+			t.Errorf("%q: got %+v, want %+v", test.value, got, test.want)
+		}
+	}
+
+	for _, value := range []string{"kep", "keep,", "for=", "for=x", "for=0d", "for=-1h", "keep&for=1d"} {
+		var got OnetimeAttrs
+		if err := got.Set(value); err == nil {
+			t.Errorf("%q: no error, got %+v", value, got)
+		}
+	}
+}
+
+func TestOnetimeAttrsFlag(t *testing.T) {
+	tests := []struct {
+		args []string
+		want OnetimeAttrs
+	}{
+		{[]string{"-tls-onetime", "/:."}, OnetimeAttrs{On: true}},
+		{[]string{"-tls-onetime=keep,for=1d", "/:."}, OnetimeAttrs{On: true, Keep: true, For: 24 * time.Hour}},
+		{[]string{"-tls-onetime", "keep"}, OnetimeAttrs{On: true}},
+	}
+	for _, test := range tests {
+		f := flag.NewFlagSet("knut", flag.ContinueOnError)
+		opts := SetupFlags(f)
+		if err := f.Parse(test.args); err != nil {
+			t.Errorf("%v: %v", test.args, err)
+		} else if opts.TlsOnetime != test.want {
+			t.Errorf("%v: got %+v, want %+v", test.args, opts.TlsOnetime, test.want)
+		}
+	}
+}
+
+func TestOnetimeTLSFor(t *testing.T) {
+	start := time.Now()
+	ot := createOnetimeTLS(t, &OnetimeTLS{Attrs: OnetimeAttrs{On: true, For: time.Hour}})
+	if d := ot.Cert.NotAfter.Sub(start.Add(time.Hour)); d.Abs() > 2*time.Second {
+		t.Errorf("NotAfter %v, want about an hour from now", ot.Cert.NotAfter)
+	}
+}
+
+func TestOnetimeTLSKeep(t *testing.T) {
+	dir := t.TempDir()
+	keep := OnetimeAttrs{On: true, Keep: true}
+	create := func(addr string, attrs OnetimeAttrs, now time.Time) *OnetimeTLS {
+		t.Helper()
+		ot := &OnetimeTLS{Attrs: attrs, Dir: dir, now: func() time.Time { return now }}
+		if err := ot.Create(addr); err != nil {
+			t.Fatal(err)
+		}
+		ot.Listener.Close()
+		return ot
+	}
+	check := func(ot *OnetimeTLS, state string) {
+		t.Helper()
+		if ot.state != state {
+			t.Errorf("state %q, want %q", ot.state, state)
+		}
+	}
+	now := time.Now()
+
+	first := create("127.0.0.1:0", keep, now)
+	check(first, "new, nothing kept yet")
+	for _, name := range []string{keepKeyFile, keepCertFile} {
+		fi, err := os.Stat(filepath.Join(dir, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if fi.Mode().Perm() != 0o600 {
+			t.Errorf("%s: mode %v, want 0600", name, fi.Mode().Perm())
+		}
+	}
+
+	again := create("127.0.0.1:0", keep, now)
+	check(again, "reused")
+	if Fingerprint(again.Cert) != Fingerprint(first.Cert) {
+		t.Error("reused certificate has another fingerprint")
+	}
+
+	moved := create("[::1]:0", keep, now)
+	check(moved, "issued again for other names, same key")
+	if Fingerprint(moved.Cert) == Fingerprint(first.Cert) || PublicKeyPin(moved.Cert) != PublicKeyPin(first.Cert) {
+		t.Error("want another fingerprint, the same pin")
+	}
+
+	lifetime := OnetimeAttrs{On: true, Keep: true, For: time.Hour}
+	limited := create("[::1]:0", lifetime, now.Add(-2*time.Hour))
+	check(limited, "issued again for another lifetime, same key")
+
+	expired := create("[::1]:0", lifetime, now)
+	check(expired, "new, the kept one has expired")
+	if PublicKeyPin(expired.Cert) == PublicKeyPin(first.Cert) {
+		t.Error("an expired certificate kept its key")
+	}
+
+	if err := os.WriteFile(filepath.Join(dir, keepCertFile), []byte("garbage"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	broken := create("[::1]:0", lifetime, now)
+	if !strings.HasPrefix(broken.state, "new, the kept one is unusable") {
+		t.Errorf("state %q, want unusable", broken.state)
+	}
 }

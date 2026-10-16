@@ -99,7 +99,10 @@ Logins:
   -tls-key string
     	use given key to start tls
   -tls-onetime
-    	use a self-signed in-memory cert+key, valid while knut runs, to drive tls
+    	use a self-signed in-memory cert+key, valid while knut runs, to drive tls.
+    	"=keep,for=30d" adds attributes, separated by ",":
+    	keep - store cert+key in the user cache folder, reuse them on the next start
+    	for=<duration> - expire the cert, "30d" or "12h"
   -version
     	print version
 ```
@@ -329,7 +332,8 @@ over TLS.
 `-tls-cert` and `-tls-key` serve a certificate you already have.
 
 `-tls-onetime` makes one up at startup: a self-signed certificate and key,
-held in memory and gone when *knut* ends. A restart brings a new one.
+held in memory and gone when *knut* ends. A restart brings a new one,
+unless `keep` holds on to it.
 
     $> knut -tls-onetime -bind 192.168.1.20:8443 /:.
 
@@ -355,6 +359,23 @@ held in memory and gone when *knut* ends. A restart brings a new one.
 * browsers speak HTTP/2 to it, so every tab of `-live` shares one
   connection. Over plain HTTP a browser opens at most 6 connections per
   host, and the 7th live tab waits for one of them
+
+Attributes follow the flag after `=`, separated by `,`:
+
+    $> knut -tls-onetime=keep,for=30d -bind :8443 /:.
+
+* `keep` stores certificate and key in the user cache folder
+  (`~/.cache/knut/tls-onetime/` on Linux, `$XDG_CACHE_HOME` moves it) and
+  reuses them on the next start. Accepted once in the browser, it stays
+  accepted. When the names or the lifetime change, the certificate is
+  issued again with the same key: `sha256` changes, `pin` stays. An
+  expired certificate is replaced, key included
+* `for=<duration>` is how long the certificate is valid, `30d` or what Go
+  takes, like `12h`. Without it the certificate doesn't expire
+* `-tls-onetime keep`, with a space, turns on a plain `-tls-onetime` and
+  takes `keep` and everything after it as mappings. *knut* warns about it
+* in the container image `keep` needs a volume for the cache folder,
+  otherwise every start is a first one
 
 `-show-qr` points the phone at `https://`, where the same warning waits.
 Comparing the fingerprint on a phone takes some digging in the browser

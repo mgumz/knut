@@ -22,7 +22,7 @@ type Opts struct {
 	DoShowQR          bool
 	DoPrintVersion    bool
 	AddServerID       string
-	TlsOnetime        bool
+	TlsOnetime        OnetimeAttrs
 	TlsCert           string
 	TlsKey            string
 }
@@ -54,7 +54,10 @@ func SetupFlags(f *flag.FlagSet) *Opts {
 	f.Var((*stringList)(&opts.AuthFiles), "auth-file", "read -auth entries from `file`, one per line, repeatable")
 	f.StringVar(&opts.HashUser, "hash", opts.HashUser, "print an entry with a bcrypt hash for `name` and exit,\nthe password is asked for, or read from stdin")
 	f.StringVar(&opts.AddServerID, "server-id", opts.AddServerID, `add "Server: <val-here>" to the response`)
-	f.BoolVar(&opts.TlsOnetime, "tls-onetime", opts.TlsOnetime, "use a self-signed in-memory cert+key, valid while knut runs, to drive tls")
+	f.Var(&opts.TlsOnetime, "tls-onetime", "use a self-signed in-memory cert+key, valid while knut runs, to drive tls.\n"+
+		`"=keep,for=30d" adds attributes, separated by ",":`+"\n"+
+		"keep - store cert+key in the user cache folder, reuse them on the next start\n"+
+		`for=<duration> - expire the cert, "30d" or "12h"`)
 	f.StringVar(&opts.TlsKey, "tls-key", opts.TlsKey, "use given key to start tls")
 	f.StringVar(&opts.TlsCert, "tls-cert", opts.TlsCert, "use given cert to start tls")
 	f.BoolVar(&opts.DoPrintVersion, "version", opts.DoPrintVersion, "print version")

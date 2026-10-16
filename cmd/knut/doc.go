@@ -84,7 +84,10 @@ Logins:
   -tls-key string
         use given key to start tls
   -tls-onetime
-        use a self-signed in-memory cert+key, valid while knut runs, to drive tls
+        use a self-signed in-memory cert+key, valid while knut runs, to drive tls.
+        "=keep,for=30d" adds attributes, separated by ",":
+        keep - store cert+key in the user cache folder, reuse them on the next start
+        for=<duration> - expire the cert, "30d" or "12h"
   -version
         print version
 

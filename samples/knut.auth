@@ -1,0 +1,28 @@
+# knut.auth - one entry per line, the same as one -auth flag
+#
+#   [window=]name:password
+#
+# a password is one of:
+#   plain text     correct-horse
+#   environment    env:NAME          read when knut starts
+#   bcrypt hash    $2a$… / $2y$…     from `htpasswd -nB name`
+#
+# no window: the entry is global and covers every window which has no
+# entry of its own.
+#
+# knut refuses a file other users can access: chmod 600 knut.auth
+
+# global: the index, the 404 page, every window not named below.
+# the hash is the one of "hunter2"
+admin:$2a$10$YFHHsbExxxXpPorWyHyQSuovj5l5giD9jGJmLfLfLEX3/TqPm4tia
+
+# /photos: two people, each with a password of their own. alice's hash
+# is the one of "correct-horse"
+/photos=alice:$2a$10$ejrEiygJV0fAtiCOwWSXze4J7sdsTYbQH8RHoZukeVotsiTzj5fd.
+/photos=bob:battery-staple
+
+# a window's own entries replace the global ones: admin is not let in here
+/upload=drop:env:UPLOAD_PW
+
+# the password is everything after the first ":"
+/git=ci:token:with:colons

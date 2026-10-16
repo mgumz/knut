@@ -41,7 +41,7 @@ no commits yet
 {{- end }}
 
 {{ define "index" -}}
-{{ range .Windows }}{{ . }}
+{{ range .Windows }}{{ .Path }}{{ if .Protected }}  (login){{ end }}
 {{ end -}}
 {{ end }}
 

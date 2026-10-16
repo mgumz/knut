@@ -3,12 +3,16 @@
 
 package knut
 
-import "flag"
+import (
+	"flag"
+	"strings"
+)
 
 type Opts struct {
 	BindAddr          string
 	DoLog             bool
-	DoAuth            string
+	Auth              []string
+	AuthFiles         []string
 	DoCompress        bool
 	DoInteractiveBind bool
 	DoTeeBody         bool
@@ -21,6 +25,12 @@ type Opts struct {
 	TlsCert           string
 	TlsKey            string
 }
+
+// stringList collects a flag given more than once.
+type stringList []string
+
+func (l *stringList) String() string     { return strings.Join(*l, ", ") }
+func (l *stringList) Set(v string) error { *l = append(*l, v); return nil }
 
 func SetupFlags(f *flag.FlagSet) *Opts {
 
@@ -39,7 +49,8 @@ func SetupFlags(f *flag.FlagSet) *Opts {
 	f.BoolVar(&opts.DoLive, "live", opts.DoLive, `listings refresh themselves, uploads report progress (serves htmx at "`+LiveAssetURI+`")`)
 	f.BoolVar(&opts.DoShowQR, "show-qr", opts.DoShowQR, `show a QR code to stdout pointing to '/' (useful only if -bind is distinct)`)
 	f.BoolVar(&opts.DoTeeBody, "tee-body", opts.DoTeeBody, `dump request.body to stdout`)
-	f.StringVar(&opts.DoAuth, "auth", "", "use 'name:password' to require")
+	f.Var((*stringList)(&opts.Auth), "auth", "ask for a login, an `entry` is '[/window=]name:password',\nrepeatable (see \"Logins\")")
+	f.Var((*stringList)(&opts.AuthFiles), "auth-file", "read -auth entries from `file`, one per line, repeatable")
 	f.StringVar(&opts.AddServerID, "server-id", opts.AddServerID, `add "Server: <val-here>" to the response`)
 	f.BoolVar(&opts.TlsOnetime, "tls-onetime", opts.TlsOnetime, "use a onetime-in-memory cert+key to drive tls")
 	f.StringVar(&opts.TlsKey, "tls-key", opts.TlsKey, "use given key to start tls")

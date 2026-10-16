@@ -116,7 +116,7 @@ func TestLayoutDrawsTheCode(t *testing.T) {
 
 	body, err := Render(Template("index"), struct {
 		Page
-		Windows []string
+		Windows []Window
 	}{Page: PageFor(r, "")})
 	if err != nil {
 		t.Fatalf("rendering the page: %v", err)
@@ -130,7 +130,7 @@ func TestLayoutDrawsTheCode(t *testing.T) {
 	r.Host = "localhost:8080"
 	body, err = Render(Template("index"), struct {
 		Page
-		Windows []string
+		Windows []Window
 	}{Page: PageFor(r, "")})
 	if err != nil {
 		t.Fatalf("rendering the page: %v", err)

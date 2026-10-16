@@ -8,6 +8,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/mgumz/knut/internal/pkg/knut/view"
 )
 
 // wantText checks "rec" is the text form, "want" line by line
@@ -131,9 +133,9 @@ func TestTextStatus(t *testing.T) {
 
 func TestTextIndex(t *testing.T) {
 
-	rec := getText(IndexHandler([]string{"/d/", "/f.txt"}), "/")
+	rec := getText(IndexHandler([]view.Window{{Path: "/d/"}, {Path: "/f.txt", Protected: true}}), "/")
 
-	wantText(t, rec, "/d/", "/f.txt")
+	wantText(t, rec, "/d/", "/f.txt  (login)")
 }
 
 func TestTextMyIP(t *testing.T) {

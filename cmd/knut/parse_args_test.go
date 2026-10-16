@@ -245,7 +245,7 @@ func TestIndexAnswersRootOnly(t *testing.T) {
 
 	root := t.TempDir()
 	muxer, windows := prepareTrees(http.NewServeMux(), []string{"/d/:" + root})
-	serveIndex(muxer, windows)
+	serveIndex(muxer, windows, nil)
 	t.Cleanup(func() { view.SetIndex(false) })
 	serveNotFound(muxer, windows)
 

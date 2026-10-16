@@ -40,10 +40,24 @@ Mapping Format:
                              info - api to use for meta data about the ip
                              supported: "ripe"
 
+Logins:
+
+   -auth name:password       - every window asks for this login
+   -auth /uri=name:password  - "/uri" asks for this login instead
+   -auth-file knut.auth      - the same entries, one per line, "#" starts a
+                               comment. the file must be closed to other
+                               users: chmod 600
+
+   a password is plain text, "env:NAME" (read from the environment) or a
+   bcrypt hash: "htpasswd -nB name" makes one
+
  Options:
 
-  -auth string
-        use 'name:password' to require
+  -auth entry
+        ask for a login, an entry is '[/window=]name:password',
+        repeatable (see "Logins")
+  -auth-file file
+        read -auth entries from file, one per line, repeatable
   -bind string
         address to bind to (default ":8080")
   -compress

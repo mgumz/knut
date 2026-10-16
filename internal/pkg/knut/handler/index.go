@@ -16,12 +16,12 @@ var indexTmpl = view.Template("index")
 // the list never changes, the page around it does: it is the uri it was
 // asked for which decides what the header shows, so the index is rendered
 // per request like every other page.
-func IndexHandler(windows []string) http.Handler {
+func IndexHandler(windows []view.Window) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		view.WriteFor(w, r, indexTmpl, struct {
 			view.Page
-			Windows []string
+			Windows []view.Window
 		}{Page: view.PageFor(r, ""), Windows: windows})
 	})
 }

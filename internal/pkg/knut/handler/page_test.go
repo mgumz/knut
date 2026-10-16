@@ -32,8 +32,8 @@ func pageTemplates() []struct {
 			tmpl: indexTmpl,
 			data: struct {
 				view.Page
-				Windows []string
-			}{Page: view.NewPage(""), Windows: []string{"/tree"}},
+				Windows []view.Window
+			}{Page: view.NewPage(""), Windows: []view.Window{{Path: "/tree"}}},
 			want: []string{`<table class="listing windows">`, `<td class="name"><a href="./tree">/tree</a></td>`},
 		}, {
 			name: "status",

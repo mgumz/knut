@@ -274,12 +274,13 @@ so the count it swaps out of band comes after them.
 </div>
 {{ end }}
 
-{{/* index: .Windows - rows of a listing, so the keys of one walk them */}}
+{{/* index: .Windows ([]Window) - rows of a listing, so the keys of one walk them */}}
 {{ define "index" -}}
 <table class="listing windows">
   <tbody>
 {{- range .Windows }}
-    <tr><td class="name"><a href=".{{ . }}">{{ . }}</a></td></tr>
+    <tr><td class="name"><a href=".{{ .Path }}">{{ .Path }}</a>
+      {{- if .Protected }} <span class="login" title="asks for a login">🔒</span>{{ end }}</td></tr>
 {{- end }}
   </tbody>
 </table>

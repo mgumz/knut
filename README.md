@@ -55,10 +55,24 @@ Mapping Format:
                              info - api to use for meta data about the ip
                              supported: "ripe"
 
+Logins:
+
+   -auth name:password       - every window asks for this login
+   -auth /uri=name:password  - "/uri" asks for this login instead
+   -auth-file knut.auth      - the same entries, one per line, "#" starts a
+                               comment. the file must be closed to other
+                               users: chmod 600
+
+   a password is plain text, "env:NAME" (read from the environment) or a
+   bcrypt hash: "htpasswd -nB name" makes one
+
  Options:
 
-  -auth string
-    	use 'name:password' to require
+  -auth entry
+    	ask for a login, an entry is '[/window=]name:password',
+    	repeatable (see "Logins")
+  -auth-file file
+    	read -auth entries from file, one per line, repeatable
   -bind string
     	address to bind to (default ":8080")
   -compress
@@ -254,6 +268,57 @@ wget, a script. Browsers ask for HTML and get the page.
   Found`
 * `?text` and `?html` pick the form, whatever the client asks for
 * downloads, `?zip` and `?qr` are what they were
+
+## Logins
+
+`-auth` asks for a login (HTTP basic auth). Given with a window, only that
+window asks for it:
+
+    $> knut -auth admin:pw -auth /photos=alice:pw2 /photos:~/photos /docs:~/docs
+
+* `/photos` lets `alice` in, every other window and the index let `admin`
+  in. A window with logins of its own asks for those alone: a browser
+  sends one login per request, so `admin` does not get into `/photos`
+* `-auth` can be given more than once, also for the same window, one user
+  each
+* each window asks with a realm of its own (`knut /photos`): the browser
+  asks once per window and keeps the logins apart
+* everything a window answers asks: the listings, `?zip`, `?qr`, the
+  requests of `-live`, `git clone http://alice:pw2@host:8080/g/knut/`.
+  `/.knut/htmx.js` does not
+* a window inside another (`/photos/pub/` in `/photos/`) only asks for its
+  own logins, or the global ones. *knut* warns about it at startup
+* a window named by `-auth` which no mapping publishes is reported at
+  startup and otherwise ignored. A typo (`/photo`) leaves the window it
+  meant to the global logins, or open: check that line
+* the index of `-serve-index` lists every window, the ones asking for a
+  login marked with 🔒
+
+`-auth-file` reads the same entries from a file, one per line. Blank lines
+and lines starting with `#` are skipped. The file must be closed to other
+users (`chmod 600`), *knut* refuses it otherwise:
+
+    $> knut -auth-file knut.auth /photos:~/photos /docs:~/docs @/upload:/tmp/in
+
+A password is one of:
+
+* plain text: everything after the first `:`, so it can hold `:` itself
+* `env:NAME`: read from the environment when *knut* starts, so it is in
+  neither the file nor `ps`
+* a bcrypt hash (`$2a$`, `$2b$`, `$2y$`): `htpasswd -nB alice` asks for
+  the password twice and prints `alice:$2y$05$…`, put `/photos=` in front
+  of it and it is an entry. A `.htpasswd` file is an auth file of global
+  entries. The other hashes of `htpasswd` (`$apr1$`, `{SHA}`) are refused
+
+[samples/knut.auth](./samples/knut.auth) shows each of them. A hash on the
+command line needs single quotes: `-auth '/photos=alice:$2a$10$…'`.
+
+bcrypt is slow on purpose, and basic auth sends the password with every
+request. *knut* remembers a login which passed, in memory, for as long as
+it runs: only the first request of it waits for bcrypt.
+
+Basic auth sends the password readable for anyone on the way, so use it
+over TLS.
 
 ## Build & Installing
 

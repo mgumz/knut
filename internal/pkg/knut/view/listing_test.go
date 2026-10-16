@@ -132,8 +132,8 @@ func TestIndexCarriesTheKeys(t *testing.T) {
 
 	body, err := Render(Template("index"), struct {
 		Page
-		Windows []string
-	}{Page: NewPage(""), Windows: []string{"/d/"}})
+		Windows []Window
+	}{Page: NewPage(""), Windows: []Window{{Path: "/d/"}}})
 	if err != nil {
 		t.Fatalf("rendering the index: %v", err)
 	}

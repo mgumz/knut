@@ -15,6 +15,7 @@ import (
 	qrcode "github.com/skip2/go-qrcode"
 
 	"github.com/mgumz/knut/internal/pkg/knut"
+	"github.com/mgumz/knut/internal/pkg/knut/auth"
 	"github.com/mgumz/knut/internal/pkg/knut/handler"
 	"github.com/mgumz/knut/internal/pkg/knut/ui"
 	"github.com/mgumz/knut/internal/pkg/knut/view"
@@ -51,12 +52,14 @@ func main() {
 
 	warnReservedWindows(opts, windows)
 
+	guard := buildGuard(opts, windows)
+
 	if opts.DoIndexHandler {
-		serveIndex(tree, windows)
+		serveIndex(tree, windows, guard)
 	}
 	serveNotFound(tree, windows)
 
-	h := buildHandlerChain(tree, opts)
+	h := buildHandlerChain(tree, opts, guard)
 	run := makeRunner(opts, h)
 
 	fmt.Printf("\n%s\n\nknut started on %s, be aware of the trees!\n\n",
@@ -81,14 +84,22 @@ func fatal(format string, a ...any) {
 //
 // a mapping already sitting at "/" keeps it: it is the more explicit wish
 // of the two.
-func serveIndex(tree *http.ServeMux, windows []string) {
+//
+// a window which asks for a login is listed and marked: hiding it would
+// protect nothing, it answers with a 401 either way.
+func serveIndex(tree *http.ServeMux, windows []string, guard *auth.Guard) {
 
 	if slices.Contains(windows, "/") {
 		fmt.Fprintf(os.Stderr, "warning: -serve-index ignored, a mapping is published through %q\n", "/")
 		return
 	}
 
-	tree.Handle("/{$}", handler.IndexHandler(windows))
+	listed := make([]view.Window, len(windows))
+	for i, window := range windows {
+		listed[i] = view.Window{Path: window, Protected: guard.For(window) != nil}
+	}
+
+	tree.Handle("/{$}", handler.IndexHandler(listed))
 	view.SetIndex(true)
 }
 
@@ -142,8 +153,8 @@ func resolveBindAddr(opts *knut.Opts) string {
 
 // buildHandlerChain wraps the muxer with the optional middleware selected via
 // opts. Order matters: the outermost wrapper runs first per request.
-func buildHandlerChain(tree http.Handler, opts *knut.Opts) http.Handler {
-	h := tree
+func buildHandlerChain(tree *http.ServeMux, opts *knut.Opts, guard *auth.Guard) http.Handler {
+	var h http.Handler = tree
 
 	if opts.AddServerID != "" {
 		h = handler.AddServerIDHandler(h, opts.AddServerID)
@@ -152,18 +163,20 @@ func buildHandlerChain(tree http.Handler, opts *knut.Opts) http.Handler {
 	if opts.DoCompress {
 		h = handler.CompressHandler(h)
 	}
+	if guard != nil {
+		// below the htmx asset: a browser logged in to one window
+		// sends no login for "/.knut/", it would be asked for the
+		// global one in the middle of a page
+		h = handler.BasicAuthHandler(h, func(r *http.Request) *auth.Logins {
+			_, window := tree.Handler(r)
+			return guard.For(window)
+		})
+	}
 	if opts.DoLive {
 		// above the compressor: the htmx asset is embedded gzipped and
 		// goes out that way. it brings its own caching headers too, the
 		// one resource knut serves which is worth caching.
 		h = view.AssetHandler(h)
-	}
-	if opts.DoAuth != "" {
-		parts := strings.SplitN(opts.DoAuth, ":", 2)
-		if len(parts) != 2 {
-			fatal("missing separator for argument to -auth")
-		}
-		h = handler.BasicAuthHandler(h, parts[0], parts[1])
 	}
 	if opts.DoLog {
 		h = handler.LogRequestHandler(h, os.Stdout)

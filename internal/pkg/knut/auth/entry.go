@@ -101,7 +101,7 @@ func parseSecret(password string) (secret, error) {
 		}
 		return bcryptSecret(password), nil
 	case hasPrefix(password, weakPrefixes):
-		return nil, errors.New("only bcrypt hashes are taken, create one with \"htpasswd -nB <name>\"")
+		return nil, errors.New("only bcrypt hashes are taken, create one with \"knut -hash <name>\"")
 	}
 
 	return plainSecret(password), nil

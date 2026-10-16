@@ -49,7 +49,7 @@ Logins:
                                users: chmod 600
 
    a password is plain text, "env:NAME" (read from the environment) or a
-   bcrypt hash: "htpasswd -nB name" makes one
+   bcrypt hash: "knut -hash name" makes one, so does "htpasswd -nB name"
 
  Options:
 
@@ -62,6 +62,9 @@ Logins:
         address to bind to (default ":8080")
   -compress
         handle "Accept-Encoding" = "gzip,deflate" (default true)
+  -hash name
+        print an entry with a bcrypt hash for name and exit,
+        the password is asked for, or read from stdin
   -live
         listings refresh themselves, uploads report progress (serves htmx at "/.knut/htmx.js")
   -log

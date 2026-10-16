@@ -52,7 +52,7 @@ Logins:
                                users: chmod 600
 
    a password is plain text, "env:NAME" (read from the environment) or a
-   bcrypt hash: "htpasswd -nB name" makes one
+   bcrypt hash: "knut -hash name" makes one, so does "htpasswd -nB name"
 
 `
 

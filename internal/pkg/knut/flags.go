@@ -13,6 +13,7 @@ type Opts struct {
 	DoLog             bool
 	Auth              []string
 	AuthFiles         []string
+	HashUser          string
 	DoCompress        bool
 	DoInteractiveBind bool
 	DoTeeBody         bool
@@ -51,6 +52,7 @@ func SetupFlags(f *flag.FlagSet) *Opts {
 	f.BoolVar(&opts.DoTeeBody, "tee-body", opts.DoTeeBody, `dump request.body to stdout`)
 	f.Var((*stringList)(&opts.Auth), "auth", "ask for a login, an `entry` is '[/window=]name:password',\nrepeatable (see \"Logins\")")
 	f.Var((*stringList)(&opts.AuthFiles), "auth-file", "read -auth entries from `file`, one per line, repeatable")
+	f.StringVar(&opts.HashUser, "hash", opts.HashUser, "print an entry with a bcrypt hash for `name` and exit,\nthe password is asked for, or read from stdin")
 	f.StringVar(&opts.AddServerID, "server-id", opts.AddServerID, `add "Server: <val-here>" to the response`)
 	f.BoolVar(&opts.TlsOnetime, "tls-onetime", opts.TlsOnetime, "use a onetime-in-memory cert+key to drive tls")
 	f.StringVar(&opts.TlsKey, "tls-key", opts.TlsKey, "use given key to start tls")

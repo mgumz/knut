@@ -33,6 +33,11 @@ func main() {
 		os.Exit(0)
 	}
 
+	if opts.HashUser != "" {
+		printHash(opts.HashUser)
+		os.Exit(0)
+	}
+
 	opts.BindAddr = resolveBindAddr(opts)
 
 	if flag.NArg() == 0 {

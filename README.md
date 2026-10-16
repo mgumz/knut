@@ -64,7 +64,7 @@ Logins:
                                users: chmod 600
 
    a password is plain text, "env:NAME" (read from the environment) or a
-   bcrypt hash: "htpasswd -nB name" makes one
+   bcrypt hash: "knut -hash name" makes one, so does "htpasswd -nB name"
 
  Options:
 
@@ -77,6 +77,9 @@ Logins:
     	address to bind to (default ":8080")
   -compress
     	handle "Accept-Encoding" = "gzip,deflate" (default true)
+  -hash name
+    	print an entry with a bcrypt hash for name and exit,
+    	the password is asked for, or read from stdin
   -live
     	listings refresh themselves, uploads report progress (serves htmx at "/.knut/htmx.js")
   -log
@@ -305,10 +308,11 @@ A password is one of:
 * plain text: everything after the first `:`, so it can hold `:` itself
 * `env:NAME`: read from the environment when *knut* starts, so it is in
   neither the file nor `ps`
-* a bcrypt hash (`$2a$`, `$2b$`, `$2y$`): `htpasswd -nB alice` asks for
-  the password twice and prints `alice:$2y$05$…`, put `/photos=` in front
-  of it and it is an entry. A `.htpasswd` file is an auth file of global
-  entries. The other hashes of `htpasswd` (`$apr1$`, `{SHA}`) are refused
+* a bcrypt hash (`$2a$`, `$2b$`, `$2y$`): `knut -hash alice` asks for the
+  password twice and prints `alice:$2a$10$…`, put `/photos=` in front of
+  it and it is an entry. `htpasswd -nB alice` does the same, so a
+  `.htpasswd` file is an auth file of global entries. The other hashes of
+  `htpasswd` (`$apr1$`, `{SHA}`) are refused
 
 [samples/knut.auth](./samples/knut.auth) shows each of them. A hash on the
 command line needs single quotes: `-auth '/photos=alice:$2a$10$…'`.

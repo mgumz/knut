@@ -5,7 +5,7 @@
 # a password is one of:
 #   plain text     correct-horse
 #   environment    env:NAME          read when knut starts
-#   bcrypt hash    $2a$… / $2y$…     from `htpasswd -nB name`
+#   bcrypt hash    $2a$… / $2y$…     from `knut -hash name` or `htpasswd -nB name`
 #
 # no window: the entry is global and covers every window which has no
 # entry of its own.

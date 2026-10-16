@@ -6,7 +6,7 @@ package handler
 import (
 	"compress/gzip"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 )
@@ -15,7 +15,7 @@ func GzHandler(next http.Handler, clevel string) http.Handler {
 
 	level, err := atoiInRange(clevel, -1, gzip.BestCompression, gzip.DefaultCompression)
 	if err != nil {
-		log.Printf("warning: scanning compression level: %v", err)
+		slog.Warn("scanning compression level", "level", clevel, "err", err)
 	}
 
 	gzPool := newGzPool(level)

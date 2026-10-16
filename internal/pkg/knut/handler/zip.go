@@ -5,8 +5,8 @@ package handler
 
 import (
 	"archive/zip"
-	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"path"
@@ -21,7 +21,7 @@ func ZipHandler(dir, prefix string, store bool) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := ZipDirectory(w, dir, prefix, store); err != nil {
-			fmt.Fprintf(os.Stderr, "warning: creating zip of %q: %v\n", dir, err)
+			slog.Warn("creating zip", "dir", dir, "err", err)
 		}
 	})
 }
@@ -46,8 +46,7 @@ func ZipDirectory(w io.Writer, dir, prefix string, store bool) error {
 
 		f, err := os.Open(path)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "warning: problem open file %s for reading: %v\n",
-				path, err)
+			slog.Warn("opening file for a zip", "path", path, "err", err)
 			return nil
 		}
 		defer f.Close()
@@ -56,8 +55,7 @@ func ZipDirectory(w io.Writer, dir, prefix string, store bool) error {
 		entry, err := zipEntry(zw, name, fi, store)
 
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "warning: can't create entry for zip: %v\n",
-				err)
+			slog.Warn("creating zip entry", "path", path, "err", err)
 			return nil
 		}
 

@@ -30,6 +30,8 @@ func main() {
 	flag.CommandLine.SetOutput(os.Stdout)
 	flag.Parse()
 
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, nil)))
+
 	if opts.DoPrintVersion {
 		fmt.Println(knut.Version, knut.GitHash, knut.BuildDate)
 		os.Exit(0)

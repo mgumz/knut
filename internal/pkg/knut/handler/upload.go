@@ -6,7 +6,7 @@ package handler
 import (
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"mime/multipart"
 	"net"
 	"net/http"
@@ -66,7 +66,7 @@ func UploadHandler(dir string) http.Handler {
 				prefix := genNamePrefix(r.RemoteAddr, fh.Filename)
 				n, err := storeFormFile(prefix, dir, fh)
 				if err != nil {
-					log.Printf("warning: %v", err)
+					slog.Warn("storing upload", "dir", dir, "err", err)
 				}
 				nBytes += n
 			}

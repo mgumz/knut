@@ -7,7 +7,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -59,7 +59,7 @@ func gitListPage(w http.ResponseWriter, r *http.Request, gitBinary, dir string, 
 		return
 	case err != nil:
 		view.Status(w, r, http.StatusInternalServerError)
-		fmt.Fprintf(os.Stderr, "error: %q: %v\n", dir, err)
+		slog.Error("listing repositories", "dir", dir, "err", err)
 		return
 	}
 
@@ -105,7 +105,7 @@ func readGitList(ctx context.Context, gitBinary, dir string) (gitList, string, e
 			if err != nil {
 				// a repository git refuses - broken, or owned by
 				// someone else - is listed without its details
-				fmt.Fprintf(os.Stderr, "warning: %q: %v\n", sub, err)
+				slog.Warn("reading repository", "dir", sub, "err", err)
 			}
 			row.Repo = true
 			row.Date, row.ISO, row.Subject, row.Branch = parseGitHead(out)

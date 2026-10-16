@@ -6,11 +6,10 @@ package handler
 import (
 	"archive/zip"
 	"encoding/binary"
-	"fmt"
 	"io"
 	"io/fs"
+	"log/slog"
 	"net/http"
-	"os"
 	"strings"
 	"unicode/utf8"
 
@@ -42,7 +41,7 @@ func zipFSFolder(w http.ResponseWriter, r *http.Request, fsys fs.FS, name, repor
 	z, file, err := openZip(fsys, name)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(os.Stderr, "error: %q: %v\n", reported, err)
+		slog.Error("opening zip", "zip", reported, "err", err)
 		return
 	}
 	defer file.Close()
@@ -70,13 +69,13 @@ func zipFSFolder(w http.ResponseWriter, r *http.Request, fsys fs.FS, name, repor
 			continue
 		}
 		if err := zipRawEntry(zw, entry, base+"/"+rel); err != nil {
-			fmt.Fprintf(os.Stderr, "warning: writing zip of %q in %q: %v\n", folder, reported, err)
+			slog.Warn("writing zip", "zip", reported, "folder", folder, "err", err)
 			return
 		}
 	}
 
 	if err := zw.Close(); err != nil {
-		fmt.Fprintf(os.Stderr, "warning: finishing zip of %q in %q: %v\n", folder, reported, err)
+		slog.Warn("finishing zip", "zip", reported, "folder", folder, "err", err)
 	}
 }
 
@@ -95,7 +94,7 @@ func zipRawEntry(zw *zip.Writer, entry *zip.File, name string) error {
 	isDir := strings.HasSuffix(entry.Name, "/")
 
 	if !fs.ValidPath(strings.TrimSuffix(entry.Name, "/")) || strings.ContainsRune(entry.Name, '\\') {
-		fmt.Fprintf(os.Stderr, "warning: skipping %q for a zip: unsafe name\n", entry.Name)
+		slog.Warn("skipping zip entry, unsafe name", "name", entry.Name)
 		return nil
 	}
 	if !isDir && !entry.Mode().IsRegular() {
@@ -104,7 +103,7 @@ func zipRawEntry(zw *zip.Writer, entry *zip.File, name string) error {
 
 	raw, err := entry.OpenRaw()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "warning: opening %q for a zip: %v\n", entry.Name, err)
+		slog.Warn("opening zip entry", "name", entry.Name, "err", err)
 		return nil
 	}
 

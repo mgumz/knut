@@ -6,10 +6,10 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/netip"
-	"os"
 	"strconv"
 	"strings"
 
@@ -44,12 +44,12 @@ func asnRIPE(ip string) string {
 
 	resp, err := http.Get(url)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "asnRIPE: %s for %s\n", err, url)
+		slog.Warn("asn lookup", "url", url, "err", err)
 		return ""
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		fmt.Fprintf(os.Stderr, "asnRIPE: %d for %s\n", resp.StatusCode, url)
+		slog.Warn("asn lookup", "url", url, "status", resp.StatusCode)
 		return ""
 	}
 
@@ -67,7 +67,7 @@ func asnRIPE(ip string) string {
 	dec.Decode(&response)
 
 	if len(response.Data.Asns) == 0 {
-		fmt.Fprintf(os.Stderr, "asnRIPE: 0 asns for %s\n", ip)
+		slog.Warn("asn lookup: no asns", "ip", ip)
 		return ""
 	}
 

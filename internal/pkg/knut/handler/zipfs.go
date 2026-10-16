@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log/slog"
 	"mime"
 	"net/http"
 	"os"
@@ -124,7 +125,7 @@ func ZipFSHandler(name, prefix, index string) http.Handler {
 		z, file, err := openZip(fsys, zipName)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(os.Stderr, "error: %q: %v\n", name, err)
+			slog.Error("opening zip", "zip", name, "err", err)
 			return
 		}
 		defer file.Close()
@@ -158,7 +159,7 @@ func zipEntryQR(w http.ResponseWriter, r *http.Request, fsys fs.FS, name, report
 	z, file, err := openZip(fsys, name)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(os.Stderr, "error: %q: %v\n", reported, err)
+		slog.Error("opening zip", "zip", reported, "err", err)
 		return
 	}
 	defer file.Close()
@@ -240,7 +241,7 @@ func indexFolderEntries(w http.ResponseWriter, r *http.Request, fsys fs.FS, name
 
 	if err := view.Listing(w, r, zipFolderReader(fsys, name, folder), opts); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(os.Stderr, "error: %q: %v\n", reported, err)
+		slog.Error("opening zip", "zip", reported, "err", err)
 	}
 }
 

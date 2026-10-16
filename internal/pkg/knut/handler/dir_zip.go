@@ -6,12 +6,11 @@ package handler
 import (
 	"archive/zip"
 	"compress/flate"
-	"fmt"
 	"io"
 	"io/fs"
+	"log/slog"
 	"mime"
 	"net/http"
-	"os"
 	"path"
 	"sync"
 	"time"
@@ -58,11 +57,11 @@ func zipFolder(w http.ResponseWriter, r *http.Request, fsys http.FileSystem, nam
 	zw.RegisterCompressor(zip.Deflate, zipDeflate)
 
 	if err := zipTree(zw, fsys, name, base+"/"); err != nil {
-		fmt.Fprintf(os.Stderr, "warning: writing zip of %q: %v\n", name, err)
+		slog.Warn("writing zip", "dir", name, "err", err)
 		return
 	}
 	if err := zw.Close(); err != nil {
-		fmt.Fprintf(os.Stderr, "warning: finishing zip of %q: %v\n", name, err)
+		slog.Warn("finishing zip", "dir", name, "err", err)
 	}
 }
 
@@ -119,7 +118,7 @@ func zipTree(zw *zip.Writer, fsys http.FileSystem, dir, prefix string) error {
 
 	infos, err := readDirInfos(fsys, dir)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "warning: listing %q for a zip: %v\n", dir, err)
+		slog.Warn("listing dir for a zip", "dir", dir, "err", err)
 		return nil
 	}
 
@@ -155,7 +154,7 @@ func zipFile(zw *zip.Writer, fsys http.FileSystem, name, entryName string, fi fs
 
 	file, err := fsys.Open(name)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "warning: opening %q for a zip: %v\n", name, err)
+		slog.Warn("opening file for a zip", "path", name, "err", err)
 		return nil
 	}
 	defer file.Close()

@@ -5,8 +5,8 @@ package handler
 
 import (
 	"archive/tar"
-	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -22,7 +22,7 @@ func TarHandler(dir, prefix string) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := tarDirectory(w, dir, prefix); err != nil {
-			fmt.Fprintf(os.Stderr, "warning: creating tar of %q: %v\n", dir, err)
+			slog.Warn("creating tar", "dir", dir, "err", err)
 		}
 	})
 }

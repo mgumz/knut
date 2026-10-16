@@ -7,9 +7,9 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"net/http"
 	"net/url"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -121,7 +121,7 @@ func gitRepoPage(w http.ResponseWriter, r *http.Request, gitBinary, gitDir strin
 	}
 	if err != nil {
 		view.Status(w, r, http.StatusInternalServerError)
-		fmt.Fprintf(os.Stderr, "error: %q: %v\n", gitDir, err)
+		slog.Error("opening repository", "dir", gitDir, "err", err)
 		return
 	}
 
@@ -179,7 +179,7 @@ func gitLogBatch(w http.ResponseWriter, r *http.Request, gitBinary, gitDir, from
 	commits, _, err := readGitLog(r.Context(), gitBinary, gitDir, from, skip)
 	if err != nil {
 		view.Status(w, r, http.StatusInternalServerError)
-		fmt.Fprintf(os.Stderr, "error: %q: %v\n", gitDir, err)
+		slog.Error("opening repository", "dir", gitDir, "err", err)
 		return
 	}
 
@@ -418,7 +418,7 @@ func gitArchive(w http.ResponseWriter, r *http.Request, gitBinary, gitDir string
 	cmd.Stderr = stderr
 
 	if err := cmd.Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "warning: writing zip of %q at %s: %v: %s\n",
-			gitDir, commit, err, strings.TrimSpace(stderr.String()))
+		slog.Warn("writing zip", "dir", gitDir, "commit", commit,
+			"err", err, "stderr", strings.TrimSpace(stderr.String()))
 	}
 }

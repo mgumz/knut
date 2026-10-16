@@ -3,6 +3,13 @@ PKG=github.com/mgumz/$(PROJECT)
 VERSION=$(shell cat VERSION)
 BUILD_DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 GIT_HASH=$(shell git describe --tags --always --dirty --match="v*")
+
+# a recipe fails when any part of a pipe fails, and what it was writing
+# is removed: no half archive in releases/
+SHELL=bash
+.SHELLFLAGS=-o pipefail -ec
+.DELETE_ON_ERROR:
+
 CONTAINER_IMAGE=quay.io/mgumz/knut:$(VERSION)
 CONTAINER_PLATFORM?=linux/amd64
 # container engine to build the image with: docker (default) or podman
@@ -69,10 +76,10 @@ bin/$(PROJECT)-$(VERSION).%:
 
 releases/$(PROJECT)-$(VERSION).%.zip: bin/$(PROJECT)-$(VERSION).%.exe
 	mkdir -p releases
-	zip -9 -j -r $@ README.md LICENSE $<
+	go run ./tools/pack.go -zip README.md LICENSE $< > $@
 releases/$(PROJECT)-$(VERSION).%.tar.gz: bin/$(PROJECT)-$(VERSION).%
 	mkdir -p releases
-	tar --format=ustar -cf - README.md LICENSE -C bin $(notdir $<) | gzip -9 > $@
+	go run ./tools/pack.go README.md LICENSE $< | gzip -9 > $@
 
 bin:
 	mkdir $@

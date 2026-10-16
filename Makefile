@@ -72,9 +72,7 @@ releases/$(PROJECT)-$(VERSION).%.zip: bin/$(PROJECT)-$(VERSION).%.exe
 	zip -9 -j -r $@ README.md LICENSE $<
 releases/$(PROJECT)-$(VERSION).%.tar.gz: bin/$(PROJECT)-$(VERSION).%
 	mkdir -p releases
-	tar -cf $(basename $@) README.md LICENSE && \
-		tar -rf $(basename $@) --strip-components 1 $< && \
-		gzip -9 $(basename $@)
+	tar --format=ustar -cf - README.md LICENSE -C bin $(notdir $<) | gzip -9 > $@
 
 bin:
 	mkdir $@

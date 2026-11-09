@@ -305,7 +305,7 @@ draws go into "#upload-files", the summary below them.
 {{ define "upload" -}}
 <div id="upload">
   <form method="post" enctype="multipart/form-data"{{ if .Live }} action="{{ .Action }}"{{ end }}>
-    <div><input type="file" name="upload_file" multiple></div>
+    <label class="drop"><span class="drop-hint">drop files here <span class="meta">or</span></span><input type="file" name="upload_file" multiple></label>
     <div><input type="submit" value="Upload"></div>
   </form>
 {{- if .Live }}

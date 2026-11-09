@@ -152,6 +152,18 @@
 		more.hidden = false;
 	}
 
+	// css cannot tell a drag passing over the input, so the zone is
+	// lit from here; the drop itself is the input's own
+	var zone = input.parentNode;
+	function over(on) {
+		return function () {
+			zone.classList.toggle("over", on);
+		};
+	}
+	input.addEventListener("dragenter", over(true));
+	input.addEventListener("dragleave", over(false));
+	input.addEventListener("drop", over(false));
+
 	form.addEventListener("submit", function (event) {
 		// nothing picked: the form posts as it would without the script
 		if (!input.files || input.files.length === 0) {

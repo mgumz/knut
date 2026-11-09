@@ -368,6 +368,71 @@ input[type="file"] {
 	max-width: 100%;
 }
 
+/* the drop zone is the file input itself, blown up to a box: a browser
+ * takes files dropped onto an input on its own, no script needed. the hint
+ * lies on top of it and lets every pointer through */
+
+.drop {
+	position: relative;
+	display: block;
+}
+
+.drop input[type="file"] {
+	display: block;
+	width: 100%;
+	padding: 4.5rem var(--gutter) 2.5rem;
+	border: 3px dashed var(--rule);
+	background: var(--bg);
+	text-align: center;
+	cursor: pointer;
+}
+
+.drop input[type="file"]:hover,
+.drop input[type="file"]:focus-visible,
+.drop.over input[type="file"] {
+	outline: 0;
+	border-color: var(--accent);
+	background: var(--hover);
+}
+
+.drop.over input[type="file"] {
+	border-style: solid;
+}
+
+.drop-hint {
+	position: absolute;
+	top: 1.75rem;
+	left: 0;
+	right: 0;
+	font-family: var(--display);
+	font-size: 1.75rem;
+	line-height: 1;
+	text-align: center;
+	pointer-events: none;
+}
+
+.drop-hint .meta {
+	font-size: 1.25rem;
+}
+
+input[type="file"]::file-selector-button {
+	margin-right: .75rem;
+	padding: .2rem 1.25rem;
+	border: 0;
+	border-bottom: 4px solid var(--accent);
+	background: var(--fg);
+	color: var(--bg);
+	font-family: var(--display);
+	font-size: 1.25rem;
+	cursor: pointer;
+}
+
+input[type="file"]::file-selector-button:hover {
+	background: var(--accent);
+	border-bottom-color: var(--rule);
+	color: var(--on-accent);
+}
+
 input[type="submit"] {
 	margin-top: 1em;
 	padding: .3rem 1.5rem;

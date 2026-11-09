@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="copy the dependencies into vendor/"
+set -euo pipefail
+
+go mod vendor

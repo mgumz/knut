@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="drop unused dependencies, add missing ones (go mod tidy)"
+set -euo pipefail
+
+go mod tidy

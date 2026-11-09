@@ -102,14 +102,8 @@ container-image:
 ######################################################
 ## dev related
 
-deps-vendor:
-	go mod vendor
-deps-cleanup:
-	go mod tidy
-deps-ls:
-	go list -m -mod=readonly -f '{{if not .Indirect}}{{.}}{{end}}' all
-deps-ls-updates:
-	go list -m -mod=readonly -f '{{if not .Indirect}}{{.}}{{end}}' -u all
+# the deps-* targets are mise tasks now, see .mise/tasks/deps/:
+# "mise run deps:vendor", "deps:cleanup", "deps:ls", "deps:ls-updates".
 
 
 

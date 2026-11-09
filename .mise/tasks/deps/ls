@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="list the direct dependencies"
+set -euo pipefail
+
+go list -m -mod=readonly -f '{{if not .Indirect}}{{.}}{{end}}' all

@@ -1,2 +1,2 @@
 [tools]
-go = "latest"
+go = "v1.27.3"

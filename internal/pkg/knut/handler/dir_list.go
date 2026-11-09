@@ -95,17 +95,22 @@ func DirListHandler(fsys http.FileSystem) http.Handler {
 // watchDir is the folder on disk behind "name", the one a live listing
 // follows. it is empty when there is none.
 //
-// knut publishes trees as http.Dir; anything else - an in-memory tree in
-// a test, an fs.FS handed to http.FS - has no path to give a watcher, and
-// a listing of it simply does not refresh itself.
+// knut publishes trees as publishedDir, an http.Dir; anything else - an
+// in-memory tree in a test, an fs.FS handed to http.FS - has no path to
+// give a watcher, and a listing of it simply does not refresh itself.
 func watchDir(fsys http.FileSystem, name string) string {
 
-	dir, ok := fsys.(http.Dir)
-	if !ok {
+	var dir string
+	switch fsys := fsys.(type) {
+	case publishedDir:
+		dir = string(fsys)
+	case http.Dir:
+		dir = string(fsys)
+	default:
 		return ""
 	}
 
-	return filepath.Join(string(dir), filepath.FromSlash(name))
+	return filepath.Join(dir, filepath.FromSlash(name))
 }
 
 // readDir lists the folder "name" below "fsys" as the rows of a listing,

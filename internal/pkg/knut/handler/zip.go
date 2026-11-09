@@ -35,6 +35,10 @@ func ZipDirectory(w io.Writer, dir, prefix string, store bool) error {
 
 	zipWalker := func(path string, fi os.FileInfo, err error) error {
 
+		if skipPartial(fi) {
+			return filepath.SkipDir
+		}
+
 		if fi.IsDir() {
 			return nil
 		}

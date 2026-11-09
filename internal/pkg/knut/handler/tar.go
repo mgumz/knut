@@ -35,6 +35,10 @@ func tarDirectory(w io.Writer, dir, prefix string) error {
 
 	tarWalker := func(path string, info os.FileInfo, err error) error {
 
+		if skipPartial(info) {
+			return filepath.SkipDir
+		}
+
 		entry := &tarEntry{tar: tw}
 		entry.GetHeader(info)
 		entry.SetName(prefix + path)

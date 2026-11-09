@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+#MISE description="update the actions of .github/workflows to their latest versions, pinned"
+set -euo pipefail
+
+# pinact comes with the ci environment, see .mise/config.ci.toml
+if [[ ",${MISE_ENV:-}," != *",ci,"* ]]; then
+	echo "update needs pinact: run it as 'MISE_ENV=ci mise run ci:update'" >&2
+	exit 1
+fi
+
+pinact run --update

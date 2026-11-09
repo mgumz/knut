@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+#MISE description="pin the actions of .github/workflows to commit hashes"
+set -euo pipefail
+
+# pinact comes with the ci environment, see .mise/config.ci.toml
+if [[ ",${MISE_ENV:-}," != *",ci,"* ]]; then
+	echo "pin needs pinact: run it as 'MISE_ENV=ci mise run ci:pin'" >&2
+	exit 1
+fi
+
+pinact run

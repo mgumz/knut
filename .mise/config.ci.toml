@@ -1,0 +1,10 @@
+# the tools behind the ci:* tasks, see .mise/tasks/ci/. active with
+# MISE_ENV=ci, on top of config.toml:
+#
+#   MISE_ENV=ci mise install
+#   MISE_ENV=ci mise run ci:pin
+#
+# the versions are tracked in mise.ci.lock.
+
+[tools]
+pinact = "latest"

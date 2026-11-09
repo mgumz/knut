@@ -13,10 +13,10 @@ FROM    alpine:3.24
 ARG     VERSION=dev
 ARG     TARGETARCH
 
-# git + cgit power the git:// and cgit:// handlers (git http-backend / cgit
-# are invoked as CGI subprocesses).
+# git powers the git:// handler (git http-backend runs as a CGI
+# subprocess).
 RUN     apk upgrade --no-cache && \
-        apk add --no-cache git cgit tini-static
+        apk add --no-cache git tini-static
 
 COPY    bin/knut-${VERSION}.linux.${TARGETARCH} /knut
 

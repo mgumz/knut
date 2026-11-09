@@ -51,16 +51,18 @@ func pageTemplates() []struct {
 				view.Page
 				Action string
 			}{Page: view.NewPage("file upload"), Action: "/upload"},
-			want: []string{`<div id="upload">`, `type="file"`, `name="upload_file"`},
+			want: []string{`<div id="upload">`, `type="file"`, `name="upload_file" multiple`},
 		}, {
 			name: "upload-done",
 			tmpl: uploadDoneTmpl,
 			data: struct {
 				view.Page
+				Files    []uploadedFile
 				Size     int64
+				Failed   int
 				Duration time.Duration
-			}{Page: view.NewPage("file upload"), Size: 4, Duration: time.Second},
-			want: []string{"ok, received 4 B in 1s", "upload another file"},
+			}{Page: view.NewPage("file upload"), Files: []uploadedFile{{Name: "a.txt", Size: 4}}, Size: 4, Duration: time.Second},
+			want: []string{"ok, received 4 B in 1s", `<span class="name">a.txt</span> <span class="meta">4 B</span>`, "upload more"},
 		}, {
 			name: "redirect",
 			tmpl: redirectTmpl,

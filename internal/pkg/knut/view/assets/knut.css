@@ -384,22 +384,48 @@ input[type="submit"]:hover {
 	background: var(--fg);
 }
 
-/* the upload bar of a live form. htmx hides anything carrying
- * "htmx-indicator" until the request it belongs to is running */
+/* the files of an upload: what the done page lists, and the rows the live
+ * form draws while it sends them - a name, a bar, a note */
 
-.progress {
-	display: flex;
-	align-items: center;
-	gap: .6rem;
-	margin-top: 1em;
+.uploaded {
+	list-style: none;
+	margin: 1em 0;
+	padding: 0;
 }
 
-.progress progress {
-	flex: 1;
+.uploaded li {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: .2rem .6rem;
+	padding: .2rem 0;
+}
+
+.uploaded .name {
+	flex: 1 1 12rem;
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+.uploaded progress {
+	flex: 0 1 8rem;
 	height: .75rem;
 	border: 0;
 	background: var(--hover);
 	accent-color: var(--accent);
+}
+
+.uploaded .failed .meta {
+	color: var(--accent);
+}
+
+.uploaded button {
+	font: inherit;
+	padding: 0 .6rem;
+	border: 1px solid var(--rule);
+	background: none;
+	color: inherit;
+	cursor: pointer;
 }
 
 /* the page of a git repository */

@@ -50,8 +50,11 @@ no commits yet
 {{ end }}
 
 {{ define "upload-done" -}}
-ok, received {{ humansize .Size }} in {{ .Duration }}
-{{ end }}
+{{ if .Failed }}{{ .Failed }} of {{ len .Files }} not stored{{ else }}ok{{ end }}, received {{ humansize .Size }} in {{ .Duration }}
+{{ range .Files -}}
+{{ if .Failed }}{{ row "failed" .Name }}{{ else }}{{ row (humansize .Size) .Name }}{{ end }}
+{{- end }}
+{{- end }}
 
 {{ define "myip" -}}
 {{ .IP }}

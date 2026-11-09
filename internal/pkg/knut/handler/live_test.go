@@ -338,7 +338,8 @@ func TestLiveZipWatchHoldsUntilReplaced(t *testing.T) {
 	}
 }
 
-// the upload form posts through htmx and reports progress
+// the live upload form carries the script which sends one file per
+// request, and the places it draws its rows into
 func TestLiveUploadForm(t *testing.T) {
 
 	liveMode(t)
@@ -346,11 +347,12 @@ func TestLiveUploadForm(t *testing.T) {
 	body := get(UploadHandler(t.TempDir()), "/upload").Body.String()
 
 	for _, want := range []string{
-		`hx-post="/upload"`,
-		`hx-encoding="multipart/form-data"`,
-		`hx-target="#upload"`,
-		"hx-on::xhr:progress",
-		`<progress id="upload-progress"`,
+		`action="/upload"`,
+		`name="upload_file" multiple`,
+		`<ul id="upload-files" class="uploaded" hidden>`,
+		`<p id="upload-summary" hidden>`,
+		`<p id="upload-more" class="meta" hidden>`,
+		`xhr.upload.onprogress`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("the live upload form does not render %q", want)

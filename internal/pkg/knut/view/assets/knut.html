@@ -296,33 +296,38 @@ so the count it swaps out of band comes after them.
 {{/*
 upload: .Action
 
-the live form posts through htmx and reports how far the bytes got. the
-bar is honest about what it measures: it fills while the browser sends, so
-it stands at 100% while the last of it is still being written to disk -
-that is what the note next to it says.
+any number of files go in one POST. the live form sends them one per
+request instead and reports how far each got, see assets/upload.js: a
+connection which drops - a phone locking its screen - costs the file it
+was sending, not the batch, and that file can be sent again. the rows it
+draws go into "#upload-files", the summary below them.
 */}}
 {{ define "upload" -}}
 <div id="upload">
-  <form method="post" enctype="multipart/form-data"
-{{- if .Live }} hx-post="{{ .Action }}" hx-encoding="multipart/form-data" hx-target="#upload" hx-swap="innerHTML"
- hx-on::xhr:progress="let bar = htmx.find('#upload-progress'), total = event.detail.total; bar.value = total ? event.detail.loaded / total * 100 : 0; htmx.find('#upload-note').textContent = bar.value < 100 ? '' : 'storing ...'"
-{{- end }}>
-    <div><input type="file" name="upload_file"></div>
+  <form method="post" enctype="multipart/form-data"{{ if .Live }} action="{{ .Action }}"{{ end }}>
+    <div><input type="file" name="upload_file" multiple></div>
     <div><input type="submit" value="Upload"></div>
-{{- if .Live }}
-    <div class="progress htmx-indicator">
-      <progress id="upload-progress" value="0" max="100"></progress>
-      <span id="upload-note" class="meta"></span>
-    </div>
-{{- end }}
   </form>
+{{- if .Live }}
+  <ul id="upload-files" class="uploaded" hidden></ul>
+  <p id="upload-summary" hidden></p>
+  <p id="upload-more" class="meta" hidden><a href="">upload more</a></p>
+  <script>{{ uploadscript }}</script>
+{{- end }}
 </div>
 {{ end }}
 
-{{/* upload-done: .Size, .Duration */}}
+{{/* upload-done: .Files (.Name, .Size, .Failed), .Size, .Failed, .Duration */}}
 {{ define "upload-done" -}}
-<p>ok, received {{ .Size | humansize }} in {{ .Duration }}</p>
-<p class="meta"><a href="">upload another file</a></p>
+<p>{{ if .Failed }}{{ .Failed }} of {{ len .Files }} not stored{{ else }}ok{{ end }}, received {{ .Size | humansize }} in {{ .Duration }}</p>
+{{- with .Files }}
+<ul class="uploaded">
+{{- range . }}
+  <li{{ if .Failed }} class="failed"{{ end }}><span class="name">{{ .Name }}</span> <span class="meta">{{ if .Failed }}not stored{{ else }}{{ .Size | humansize }}{{ end }}</span></li>
+{{- end }}
+</ul>
+{{- end }}
+<p class="meta"><a href="">upload more</a></p>
 {{ end }}
 
 {{/* myip: .IP, .Port, .ASN */}}

@@ -47,12 +47,13 @@ var pages = template.Must(template.New("knut").Funcs(funcs).Parse(knutHTML))
 // side hands over the number. the same goes for the uri of a page and the
 // code drawn from it, and for the icon.
 var funcs = template.FuncMap{
-	"humansize":  humanSize,
-	"qrcode":     qrCode,
-	"qrscript":   qrScript,
-	"keysscript": keysScript,
-	"icon":       iconURI,
-	"alivequery": aliveQuery,
+	"humansize":    humanSize,
+	"qrcode":       qrCode,
+	"qrscript":     qrScript,
+	"keysscript":   keysScript,
+	"uploadscript": uploadScript,
+	"icon":         iconURI,
+	"alivequery":   aliveQuery,
 }
 
 // Page carries what the "layout" block needs. Page specific data embeds
@@ -172,6 +173,11 @@ func isFragment(r *http.Request) bool {
 // of the page where it has one, see wantsText. a browser gets the page.
 func WriteFor(w http.ResponseWriter, r *http.Request, tmpl *template.Template, data any) {
 	writeStatusFor(w, r, http.StatusOK, tmpl, data)
+}
+
+// WriteStatusFor is WriteFor under "code".
+func WriteStatusFor(w http.ResponseWriter, r *http.Request, code int, tmpl *template.Template, data any) {
+	writeStatusFor(w, r, code, tmpl, data)
 }
 
 func writeStatusFor(w http.ResponseWriter, r *http.Request, code int, tmpl *template.Template, data any) {

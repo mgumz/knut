@@ -11,6 +11,7 @@ renders.
 | `listing-filter.js`  | inlined into every listing                        |
 | `listing-keys.js`    | inlined into every listing and the index          |
 | `qr.js`              | inlined into every page with a code in its header |
+| `upload.js`          | inlined into the upload form, `-live` only        |
 | `htmx.min.js.gz`     | served at a reserved uri, `-live` only            |
 
 Every script is an addition: a page without them is read, sorted and
@@ -187,3 +188,25 @@ and shown larger than that, which is where the pixelated scaling counts.
 
 Without the script the `qr` link is followed, which fetches the entry: a
 second way to the file, not a code. The code in the header stays small.
+
+
+## upload.js
+
+Sends the files picked in the upload form one per request instead of all
+in one POST. The form takes `multiple` either way; without the script - and
+without `-live` - the browser posts every file at once and the done page
+lists them.
+
+- one file at a time, in the order picked: a phone on a weak link gains
+  nothing from sending two side by side
+- each file gets a row in `#upload-files`: its name, a bar, a note. the bar
+  fills while the browser sends, so it stands at 100% while the server is
+  still writing the file - the note says `storing ...` then
+- a request which fails - a dropped connection, a locked screen, a 500 from
+  a file the server could not store - marks its row `not stored` and gives
+  it a `retry` button. the other files carry on
+- the summary in `#upload-summary` and the link in `#upload-more` show once
+  the queue is empty, again after every retry
+- it asks for the text form of the answer (`Accept: text/plain`), the
+  smallest one: only the status code is looked at
+- nothing picked: the submit is left alone, the form posts as without it

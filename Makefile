@@ -92,9 +92,13 @@ generate-docs:
 generate-htmx:
 	go generate ./internal/pkg/knut/view
 
-container-image:
+# the image carries a binary built here, not inside the build: see the
+# Containerfile. linux/amd64 needs bin/knut-$(VERSION).linux.amd64.
+CONTAINER_ARCH=$(notdir $(CONTAINER_PLATFORM))
+
+container-image: bin/$(PROJECT)-$(VERSION).linux.$(CONTAINER_ARCH)
 	env DOCKER_BUILDKIT=1 $(CONTAINER_ENGINE) build \
-		--file Dockerfile \
+		--file Containerfile \
 		--platform=$(CONTAINER_PLATFORM) \
 		--build-arg VERSION=$(VERSION) \
 		--tag $(CONTAINER_PLATFORM)-$(PROJECT):$(VERSION) .

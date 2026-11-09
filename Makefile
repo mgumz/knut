@@ -121,7 +121,8 @@ compile-analysis: cmd/$(PROJECT)
 report-lint:
 	golangci-lint run ./cmd/... ./internal/...
 
-reports: report-vuln report-gosec
+# gosec runs as part of report-lint, see .golangci.yml
+reports: report-vuln
 reports: report-cyclo
 
 report-cyclo:
@@ -130,20 +131,12 @@ report-cyclo:
 report-vuln:
 	@echo '####################################################################'
 	govulncheck ./cmd/... ./internal/...
-report-gosec:
-	@echo '####################################################################'
-	gosec ./cmd/... ./internal/...
 report-grype:
 	@echo '####################################################################'
 	grype .
 
-fetch-report-tools:
-	go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
-	go install golang.org/x/vuln/cmd/govulncheck@latest
-	go install github.com/securego/gosec/v2/cmd/gosec@latest
-
-fetch-report-tool-grype:
-	go install github.com/anchore/grype@latest
+# the tools of the report-* targets are tracked by mise, see
+# .mise/config.report.toml: "MISE_ENV=report mise install" fetches them.
 
 
 test:

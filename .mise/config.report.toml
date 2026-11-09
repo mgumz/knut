@@ -1,0 +1,15 @@
+# the tools behind the report-* targets of the Makefile. active with
+# MISE_ENV=report, on top of config.toml - "go" stays there, every
+# environment builds:
+#
+#   MISE_ENV=report mise install
+#   MISE_ENV=report mise exec -- make reports
+#
+# the versions are tracked in mise.report.lock.
+
+[tools]
+"go:github.com/fzipp/gocyclo/cmd/gocyclo" = "latest"
+"go:golang.org/x/vuln/cmd/govulncheck" = "latest"
+grype = "latest"
+# carries gosec as one of its linters, see .golangci.yml
+golangci-lint = "latest"
